@@ -1,0 +1,17 @@
+/* @import 'tailwindcss' layer(base); */
+
+@import 'tailwindcss';
+
+@layer components {
+  .login-email-box {
+    @apply w-full rounded-lg bg-transparent outline-none border-[1.5px] px-5 py-3 mb-5;
+  }
+
+  .login-password-box {
+	  @apply bg-white;
+  }
+
+  .btn-primary {
+	  @apply w-full text-sm py-3 bg-blue-500 hover:bg-sky-400 transition duration-300 cursor-pointer rounded-lg mb-5;
+  }
+}
