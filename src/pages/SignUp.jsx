@@ -8,7 +8,7 @@ export default function SignUp() {
    const [lastName, setLastName] = useState("");
    const [classId, setClassId] = useState("");
    const [phoneNumber, setPhoneNumber] = useState("");
-   const [selectedRole, setSelectedRole] = useState("");
+   const [selectedRole, setSelectedRole] = useState("Student");
    const [address, setAddress] = useState("");
 
    const roles = ["Student", "Teacher"];
@@ -129,7 +129,6 @@ export default function SignUp() {
                         onChange={(e) => setSelectedRole(e.target.value)}
                         className=" w-full rounded border py-3 px-3 outline-none"
                      >
-                        <option value="">-- Select an item --</option>
                         {roles.map((item, index) => (
                            <option key={index} value={item}>
                               {item}
@@ -145,6 +144,10 @@ export default function SignUp() {
                   )}
 
                   {switchComponent(selectedRole)}
+
+                  <button type="submit" className="btn-primary">
+                     Register
+                  </button>
                </form>
             </div>
          </div>
