@@ -34,18 +34,19 @@ export default function UserTable() {
             <h2 className="text-2xl font-semibold mb-12 mt-8">Subject List</h2>
             <div className="w-1/2 border border-gray-200 overflow-hidden rounded-xl shadow-md bg-white hover:shadow-lg transition-shadow duration-300">
                <table className="min-w-full divide-y divide-gray-200">
-                  {" "}
+                  {/* {" "} */}
                   <thead className="bg-gray-50">
                      <tr>
-                        <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                            Id
                         </th>
-                        <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                            Subject
                         </th>
                         <th className="px-6 py-3"></th>
                      </tr>
-                  </thead>{" "}
+                  </thead>
+                  {/* {" "} */}
                   <tbody className="bg-white divide-y divide-gray-200">
                      {users.map((user, index) => (
                         <tr key={index}>
