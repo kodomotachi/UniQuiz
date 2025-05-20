@@ -30,8 +30,9 @@ const users = [
 
 export default function AdjustSubjectList() {
    useEffect(() => {
-      document.title = "check";
-   }, []);   return (
+      document.title = "Adjust Subject List";
+   }, []);
+   return (
       <>
          <div className="flex min-h-screen">
             {/* Left Sidebar */}

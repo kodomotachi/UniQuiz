@@ -11,27 +11,27 @@ export default function TeacherDashboardButton() {
 			<div className="flex items-center justify-center border border-gray-400 bg-white rounded-xl px-10 py-2 shadow-md w-400 h-[500px] mx-[30px]">
 				<div className="grid grid-cols-5 gap-4">
 					<Link to="adjust-subject-list">
-						<button className="w-[250px] h-[60px] bg-sky-500 rounded hover:ring-2 hover:ring-black transition duration-200 outline-none">
+						<button className="w-[250px] h-[60px] bg-sky-500 rounded shadow-md hover:shadow-2xl hover:ring-1 hover:ring-black transition transition-shadow duration-300 outline-none">
 							Adjust subject list
 						</button>	
 					</Link>
 					<Link to="adjust-student-list">
-						<button className="w-[250px] h-[60px] bg-sky-500 rounded hover:ring-2 hover:ring-black transition duration-200 outline-none">
+						<button className="w-[250px] h-[60px] bg-sky-500 rounded hover:ring-1 hover:ring-black transition duration-200 outline-none">
 							Adjust student list
 						</button>	
 					</Link>
 					<Link to="adjust-teacher-list">
-						<button className="w-[250px] h-[60px] bg-sky-500 rounded hover:ring-2 hover:ring-black transition duration-200 outline-none">
+						<button className="w-[250px] h-[60px] bg-sky-500 rounded hover:ring-1 hover:ring-black transition duration-200 outline-none">
 							Adjust teacher list
 						</button>	
 					</Link>	
 					<Link to="adjust-question-list">
-						<button className="w-[250px] h-[60px] bg-sky-500 rounded hover:ring-2 hover:ring-black transition duration-200 outline-none">
+						<button className="w-[250px] h-[60px] bg-sky-500 rounded hover:ring-1 hover:ring-black transition duration-200 outline-none">
 							Adjust question list
 						</button>	
 					</Link>
 					<Link to="prepare-examination">
-						<button className="w-[250px] h-[60px] bg-sky-500 rounded hover:ring-2 hover:ring-black transition duration-200 outline-none">
+						<button className="w-[250px] h-[60px] bg-sky-500 rounded hover:ring-1 hover:ring-black transition duration-200 outline-none">
 							Prepare examination
 						</button>
 					</Link>
