@@ -10,7 +10,9 @@ export default function TeacherDashboard() {
 	return (
 		<>
 			<NavBar />
-			<Outlet />
+			<div className="min-h-[calc(100vh-64px)]">
+				<Outlet />
+			</div>
 		</>
 	);
-}	
+}
