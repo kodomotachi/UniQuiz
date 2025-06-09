@@ -29,7 +29,11 @@ const initialUsers = [
 ];
 
 export default function AdjustSubjectList() {
-    const [users, setUsers] = useState(initialUsers);
+    // Load data from localStorage or use initialUsers as fallback
+    const [users, setUsers] = useState(() => {
+        const savedUsers = localStorage.getItem('subjectList');
+        return savedUsers ? JSON.parse(savedUsers) : initialUsers;
+    });
     const [showForm, setShowForm] = useState(false);
     const [showEditForm, setShowEditForm] = useState(false);
     const [subjectId, setSubjectId] = useState('');
@@ -40,7 +44,12 @@ export default function AdjustSubjectList() {
 
     useEffect(() => {
         document.title = 'Adjust Subject List';
-    }, []); // Handle ESC key press
+    }, []);
+
+    // Save users to localStorage whenever users state changes
+    useEffect(() => {
+        localStorage.setItem('subjectList', JSON.stringify(users));
+    }, [users]); // Handle ESC key press
     useEffect(() => {
         const handleKeyDown = event => {
             if (event.key === 'Escape') {
@@ -142,6 +151,17 @@ export default function AdjustSubjectList() {
         }
     };
 
+    const handleRestore = () => {
+        const confirmRestore = window.confirm(
+            'Are you sure you want to restore the original subject list? All changes will be lost.'
+        );
+        if (confirmRestore) {
+            setUsers(initialUsers);
+            localStorage.setItem('subjectList', JSON.stringify(initialUsers));
+            console.log('Subject list restored to original');
+        }
+    };
+
     return (
         <>
             <div className="flex min-h-screen">
@@ -151,9 +171,12 @@ export default function AdjustSubjectList() {
                         className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 mb-5 rounded-md text-sm transition duration-300 flex items-center w-full"
                         onClick={() => setShowForm(true)}
                     >
-                        New Subject
+                        New Subject{' '}
                     </button>
-                    <button className="bg-sky-500 hover:bg-sky-600 text-white py-2 px-4 mb-5 rounded-md text-sm transition duration-300 flex items-center w-full">
+                    <button
+                        className="bg-sky-500 hover:bg-sky-600 text-white py-2 px-4 mb-5 rounded-md text-sm transition duration-300 flex items-center w-full"
+                        onClick={handleRestore}
+                    >
                         Restore
                     </button>
                 </div>
