@@ -8,30 +8,29 @@ export default function TeacherDashboardButton() {
 					Teacher Dashboard
 				</p>
 			</div>
-			<div className="flex items-center justify-center border border-gray-400 bg-white rounded-xl px-10 py-2 shadow-md w-400 h-[500px] mx-[30px]">
-				<div className="grid grid-cols-5 gap-4">
+			<div className="flex items-center justify-center border border-gray-400 bg-white rounded-xl px-10 py-2 shadow-md w-400 h-[500px] mx-[30px]">				<div className="grid grid-cols-5 gap-4">
 					<Link to="adjust-subject-list">
-						<button className="w-[250px] h-[60px] bg-fuchsia-300 rounded shadow-md hover:shadow-2xl hover:bg-fuchsia-500 transition-all transition-colors duration-300 ease-in-out outline-none">
+						<button className="w-[250px] h-[60px] bg-sky-500 rounded shadow-md hover:shadow-2xl transition-all duration-300 hover:bg-sky-600 ease-in-out outline-none text-white font-medium">
 							Adjust subject list
 						</button>	
 					</Link>
 					<Link to="adjust-student-list">
-						<button className="w-[250px] h-[60px] bg-sky-500 rounded hover:ring-1 hover:ring-black transition duration-200 outline-none">
+						<button className="w-[250px] h-[60px] bg-sky-500 rounded shadow-md hover:shadow-2xl transition-all duration-300 hover:bg-sky-600 ease-in-out outline-none text-white font-medium">
 							Adjust student list
 						</button>	
 					</Link>
 					<Link to="adjust-teacher-list">
-						<button className="w-[250px] h-[60px] bg-sky-500 rounded hover:ring-1 hover:ring-black transition duration-200 outline-none">
+						<button className="w-[250px] h-[60px] bg-sky-500 rounded shadow-md hover:shadow-2xl transition-all duration-300 hover:bg-sky-600 ease-in-out outline-none text-white font-medium">
 							Adjust teacher list
 						</button>	
 					</Link>	
 					<Link to="adjust-question-list">
-						<button className="w-[250px] h-[60px] bg-sky-500 rounded hover:ring-1 hover:ring-black transition duration-200 outline-none">
+						<button className="w-[250px] h-[60px] bg-sky-500 rounded shadow-md hover:shadow-2xl transition-all duration-300 hover:bg-sky-600 ease-in-out outline-none text-white font-medium">
 							Adjust question list
 						</button>	
 					</Link>
 					<Link to="prepare-examination">
-						<button className="w-[250px] h-[60px] bg-sky-500 rounded hover:ring-1 hover:ring-black transition duration-200 outline-none">
+						<button className="w-[250px] h-[60px] bg-sky-500 rounded shadow-md hover:shadow-2xl transition-all duration-300 hover:bg-sky-600 ease-in-out outline-none text-white font-medium">
 							Prepare examination
 						</button>
 					</Link>

@@ -11,6 +11,11 @@ const users = [
 ];
 
 export default function AdjustTeacherList() {
+    const [teacherList, getTeacherList] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+
     const [showForm, setShowForm] = useState(false);
     const [formData, setFormData] = useState({
         firstName: '',

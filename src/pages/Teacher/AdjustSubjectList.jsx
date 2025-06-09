@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import React from "react";
 
 const users = [
@@ -29,15 +29,19 @@ const users = [
 ];
 
 export default function AdjustSubjectList() {
+   const [showForm, setShowForm] = useState(false);
+   
    useEffect(() => {
       document.title = "Adjust Subject List";
    }, []);
+
    return (
       <>
          <div className="flex min-h-screen">
             {/* Left Sidebar */}
             <div className="w-1/6 bg-gray-100 shadow-md px-4 py-20">
-               <button className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 mb-5 rounded-md text-sm transition duration-300 flex items-center w-full">
+               <button className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 mb-5 rounded-md text-sm transition duration-300 flex items-center w-full"
+                        onAction={() => {setShowForm(true)}}>
                   New Subject
                </button>
                <button className="bg-sky-500 hover:bg-sky-600 text-white py-2 px-4 mb-5 rounded-md text-sm transition duration-300 flex items-center w-full">
