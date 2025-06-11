@@ -54,13 +54,23 @@ export default function AdjustStudentList() {
     const [editingClass, setEditingClass] = useState(null);
     const [deletingClass, setDeletingClass] = useState(null);
     const [duplicateIdError, setDuplicateIdError] = useState(false);
+    const [originalEditingClassId, setOriginalEditingClassId] = useState('');
     const [newClass, setNewClass] = useState({
         id: '',
         name: '',
         students: []
     });
-    const [classData, setClassData] = useState(initialData);
-    const [originalEditingClassId, setOriginalEditingClassId] = useState('');
+
+    // Load data from localStorage on component mount
+    const [classData, setClassData] = useState(() => {
+        const savedData = localStorage.getItem('classData');
+        return savedData ? JSON.parse(savedData) : initialData;
+    });
+
+    // Save data to localStorage whenever classData changes
+    useEffect(() => {
+        localStorage.setItem('classData', JSON.stringify(classData));
+    }, [classData]);
 
     // Get current student list based on selected class
     const currentStudentList = classData.classes.find(c => c.id === selectedClass)?.students || [];
@@ -116,10 +126,11 @@ export default function AdjustStudentList() {
             }
 
             setDuplicateIdError(false);
-            setClassData({
+            const updatedData = {
                 ...classData,
                 classes: [...classData.classes, newClass]
-            });
+            };
+            setClassData(updatedData);
             setShowAddForm(false);
             setNewClass({ id: '', name: '', students: [] });
         }
@@ -146,10 +157,11 @@ export default function AdjustStudentList() {
             const updatedClasses = classData.classes.map(c =>
                 c.id === originalEditingClassId ? { ...editingClass } : c
             );
-            setClassData({
+            const updatedData = {
                 ...classData,
                 classes: updatedClasses
-            });
+            };
+            setClassData(updatedData);
             setShowEditForm(false);
             setEditingClass(null);
             setOriginalEditingClassId('');
@@ -164,10 +176,11 @@ export default function AdjustStudentList() {
     const confirmDelete = () => {
         if (deletingClass) {
             const updatedClasses = classData.classes.filter(c => c.id !== deletingClass.id);
-            setClassData({
+            const updatedData = {
                 ...classData,
                 classes: updatedClasses
-            });
+            };
+            setClassData(updatedData);
             setShowDeleteConfirm(false);
             setDeletingClass(null);
             if (selectedClass === deletingClass.id) {

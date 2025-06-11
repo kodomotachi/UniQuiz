@@ -1,17 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
-const users = [
-    {
-        firstName: 'Tran',
-        lastName: 'Quoc Huy',
-        teacherId: 'N22DCAT026',
-        phoneNumber: '0342114194',
-        address: 'Kon Tum',
-    },
-];
-
 export default function AdjustTeacherList() {
     const [showForm, setShowForm] = useState(false);
+    const [teachers, setTeachers] = useState([]);
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -19,27 +10,54 @@ export default function AdjustTeacherList() {
         phoneNumber: '',
         address: '',
     });
+    const [showEditForm, setShowEditForm] = useState(false);
+    const [editData, setEditData] = useState(null);
+    const [editIndex, setEditIndex] = useState(-1);
+    const [editError, setEditError] = useState('');
 
     useEffect(() => {
         document.title = 'Adjust Teacher List';
     }, []);
 
     useEffect(() => {
-        // Add ESC key listener when form is shown
-        const handleEscKey = event => {
-            if (event.key === 'Escape' && showForm) {
-                setShowForm(false);
+        // Fetch teachers data when component mounts
+        const fetchTeachers = async () => {
+            try {
+                const response = await fetch('http://localhost:3000/teacher/get-list');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch teachers');
+                }
+                const data = await response.json();
+                // Map API fields to frontend fields
+                const mapped = data.map(item => ({
+                    firstName: item.HO,
+                    lastName: item.TEN,
+                    teacherId: item.MAGV,
+                    phoneNumber: item.SODTLL,
+                    address: item.DIACHI,
+                }));
+                setTeachers(mapped);
+            } catch (error) {
+                console.error('Error fetching teachers:', error);
             }
         };
 
-        // Add event listener
-        document.addEventListener('keydown', handleEscKey);
+        fetchTeachers();
+    }, []);
 
-        // Clean up event listener when component unmounts or showForm changes
+    useEffect(() => {
+        // Add ESC key listener when form is shown
+        const handleEscKey = event => {
+            if (event.key === 'Escape') {
+                if (showForm) setShowForm(false);
+                if (showEditForm) setShowEditForm(false);
+            }
+        };
+        document.addEventListener('keydown', handleEscKey);
         return () => {
             document.removeEventListener('keydown', handleEscKey);
         };
-    }, [showForm]);
+    }, [showForm, showEditForm]);
 
     const handleInputChange = e => {
         const { name, value } = e.target;
@@ -49,21 +67,92 @@ export default function AdjustTeacherList() {
         });
     };
 
-    const handleSubmit = e => {
+    const handleSubmit = async e => {
         e.preventDefault();
-        // Here you would typically save the data to your backend
-        console.log('Submitted data:', formData);
-        // Add the new teacher to the list (in a real app, this would happen after API confirmation)
-        users.push({ ...formData });
-        // Reset form and hide it
-        setFormData({
-            firstName: '',
-            lastName: '',
-            teacherId: '',
-            phoneNumber: '',
-            address: '',
+        // Chuẩn bị dữ liệu đúng định dạng API yêu cầu
+        const payload = {
+            teacherId: formData.teacherId,
+            teacherFirstName: formData.firstName,
+            teacherLastName: formData.lastName,
+            teacherPhoneNumber: formData.phoneNumber,
+            teacherAddress: formData.address,
+        };
+        try {
+            const response = await fetch('http://localhost:3000/teacher/add-teacher', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+            if (!response.ok) {
+                throw new Error('Failed to add teacher');
+            }
+            await response.json();
+            // Thêm vào danh sách nếu thành công
+            setTeachers([...teachers, formData]);
+            // Reset form và ẩn form
+            setFormData({
+                firstName: '',
+                lastName: '',
+                teacherId: '',
+                phoneNumber: '',
+                address: '',
+            });
+            setShowForm(false);
+        } catch (error) {
+            alert('Có lỗi khi thêm giáo viên: ' + error.message);
+        }
+    };
+
+    const handleEditClick = (teacher, idx) => {
+        setEditData({ ...teacher });
+        setEditIndex(idx);
+        setEditError('');
+        setShowEditForm(true);
+    };
+
+    const handleEditInputChange = e => {
+        const { name, value } = e.target;
+        setEditData({
+            ...editData,
+            [name]: value,
         });
-        setShowForm(false);
+    };
+
+    const handleEditSubmit = async e => {
+        e.preventDefault();
+        // Kiểm tra trùng mã giáo viên
+        const duplicate = teachers.some((t, idx) => t.teacherId === editData.teacherId && idx !== editIndex);
+        if (duplicate) {
+            setEditError('Mã giáo viên đã được sử dụng bởi người khác!');
+            return;
+        }
+        // Chuẩn bị query string đúng định dạng yêu cầu
+        const params = new URLSearchParams({
+            teacherId: teachers[editIndex].teacherId, // mã cũ
+            newTeacherId: editData.teacherId, // mã mới (có thể giống mã cũ)
+            teacherFirstName: editData.firstName,
+            teacherLastName: editData.lastName,
+            teacherPhoneNumber: editData.phoneNumber,
+            teacherAddress: editData.address,
+        });
+        try {
+            const response = await fetch(`http://localhost:3000/teacher/get-list?${params.toString()}`, {
+                method: 'GET',
+            });
+            if (!response.ok) {
+                throw new Error('Failed to update teacher');
+            }
+            await response.json();
+            // Cập nhật lại danh sách local
+            const updated = [...teachers];
+            updated[editIndex] = { ...editData };
+            setTeachers(updated);
+            setShowEditForm(false);
+        } catch (error) {
+            setEditError('Có lỗi khi cập nhật giáo viên: ' + error.message);
+        }
     };
 
     return (
@@ -192,7 +281,7 @@ export default function AdjustTeacherList() {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         First Name
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
                                         Last Name
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -209,33 +298,75 @@ export default function AdjustTeacherList() {
                             </thead>
                             {/* {" "} */}
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {users.map((user, index) => (
+                                {teachers.map((teacher, index) => (
                                     <tr key={index}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {user.firstName}
-                                        </td>{' '}
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {user.lastName}
+                                            {teacher.firstName}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 w-50">
+                                            {teacher.lastName}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {user.teacherId}
+                                            {teacher.teacherId}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {user.phoneNumber}
+                                            {teacher.phoneNumber}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {user.address}
+                                            {teacher.address}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <button className="bg-indigo-500 hover:bg-indigo-600 text-white py-1 px-3 rounded-md text-sm transition duration-300">
+                                            <button className="bg-indigo-500 hover:bg-indigo-600 text-white py-1 px-3 rounded-md text-sm transition duration-300" onClick={() => handleEditClick(teacher, index)}>
                                                 Edit
                                             </button>
-                                        </td>{' '}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Edit Teacher Modal */}
+                    {showEditForm && editData && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+                            <div className="bg-white p-8 rounded-lg shadow-xl w-1/3">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-xl font-semibold">Edit Teacher</h3>
+                                    <div className="flex items-center text-gray-500 text-sm">
+                                        <span className="border border-gray-300 rounded px-1 mr-1 bg-gray-100">ESC</span>
+                                        <span>to close</span>
+                                    </div>
+                                </div>
+                                <form onSubmit={handleEditSubmit}>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                                        <input type="text" name="firstName" value={editData.firstName} onChange={handleEditInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                                        <input type="text" name="lastName" value={editData.lastName} onChange={handleEditInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Teacher ID</label>
+                                        <input type="text" name="teacherId" value={editData.teacherId} onChange={handleEditInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                        <input type="tel" name="phoneNumber" value={editData.phoneNumber} onChange={handleEditInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                                    </div>
+                                    <div className="mb-6">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                        <input type="text" name="address" value={editData.address} onChange={handleEditInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                                    </div>
+                                    {editError && <div className="text-red-500 mb-4 text-sm">{editError}</div>}
+                                    <div className="flex justify-end space-x-3">
+                                        <button type="button" onClick={() => setShowEditForm(false)} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                                        <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600">Save</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </>
