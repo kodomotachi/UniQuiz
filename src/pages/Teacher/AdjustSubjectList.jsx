@@ -29,11 +29,7 @@ const initialUsers = [
 ];
 
 export default function AdjustSubjectList() {
-    // Load data from localStorage or use initialUsers as fallback
-    const [users, setUsers] = useState(() => {
-        const savedUsers = localStorage.getItem('subjectList');
-        return savedUsers ? JSON.parse(savedUsers) : initialUsers;
-    });
+    const [users, setUsers] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [showEditForm, setShowEditForm] = useState(false);
     const [subjectId, setSubjectId] = useState('');
@@ -41,15 +37,40 @@ export default function AdjustSubjectList() {
     const [editSubjectId, setEditSubjectId] = useState('');
     const [editSubjectName, setEditSubjectName] = useState('');
     const [editingIndex, setEditingIndex] = useState(-1);
+    const [editError, setEditError] = useState('');
 
     useEffect(() => {
         document.title = 'Adjust Subject List';
     }, []);
 
-    // Save users to localStorage whenever users state changes
+    // Lấy danh sách môn học từ API khi load trang
+    useEffect(() => {
+        const fetchSubjects = async () => {
+            try {
+                const response = await fetch('http://localhost:3000/subject/get-subject');
+                if (!response.ok) throw new Error('Failed to fetch subjects');
+                const data = await response.json();
+                // Giả sử API trả về mảng các object có MAMH và TENMH
+                const mapped = data.map(item => ({
+                    id: item.MAMH,
+                    subject: item.TENMH,
+                }));
+                setUsers(mapped);
+            } catch {
+                // Nếu lỗi, fallback về localStorage hoặc initialUsers
+                const savedUsers = localStorage.getItem('subjectList');
+                setUsers(savedUsers ? JSON.parse(savedUsers) : initialUsers);
+            }
+        };
+        fetchSubjects();
+    }, []);
+
+    // Save users to localStorage whenever users state changes (chỉ để backup/restore)
     useEffect(() => {
         localStorage.setItem('subjectList', JSON.stringify(users));
-    }, [users]); // Handle ESC key press
+    }, [users]);
+
+    // Handle ESC key press
     useEffect(() => {
         const handleKeyDown = event => {
             if (event.key === 'Escape') {
@@ -75,6 +96,7 @@ export default function AdjustSubjectList() {
             document.removeEventListener('keydown', handleKeyDown);
         };
     }, [showForm, showEditForm]);
+
     const handleCancel = () => {
         setShowForm(false);
         setSubjectId('');
@@ -86,6 +108,7 @@ export default function AdjustSubjectList() {
         setEditSubjectId(userToEdit.id);
         setEditSubjectName(userToEdit.subject);
         setEditingIndex(index);
+        setEditError('');
         setShowEditForm(true);
     };
 
@@ -94,9 +117,10 @@ export default function AdjustSubjectList() {
         setEditSubjectId('');
         setEditSubjectName('');
         setEditingIndex(-1);
+        setEditError('');
     };
 
-    const handleEditSubmit = e => {
+    const handleEditSubmit = async e => {
         e.preventDefault();
         if (editSubjectId.trim() && editSubjectName.trim()) {
             // Check if the new ID conflicts with existing subjects (excluding the current one)
@@ -104,28 +128,42 @@ export default function AdjustSubjectList() {
                 (user, index) => user.id === editSubjectId.trim() && index !== editingIndex
             );
             if (existingSubject) {
-                alert('Subject ID already exists! Please use a different ID.');
+                setEditError('Subject ID already exists! Please use a different ID.');
                 return;
             }
-
-            // Update the subject in the array
-            const updatedUsers = users.map((user, index) =>
-                index === editingIndex
-                    ? { id: editSubjectId.trim(), subject: editSubjectName.trim() }
-                    : user
-            );
-            setUsers(updatedUsers);
-
-            // Reset form and close
-            setEditSubjectId('');
-            setEditSubjectName('');
-            setEditingIndex(-1);
-            setShowEditForm(false);
-
-            console.log('Subject updated successfully');
+            // Gọi API chỉnh sửa môn học
+            const payload = {
+                subjectId: users[editingIndex].id, // mã cũ
+                newSubjectId: editSubjectId.trim(),
+                subjectName: editSubjectName.trim(),
+            };
+            try {
+                const response = await fetch('http://localhost:3000/subject/edit-subject', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                if (!response.ok) throw new Error('Failed to update subject');
+                await response.json();
+                // Cập nhật lại danh sách local (hoặc reload lại từ API)
+                const updatedUsers = users.map((user, index) =>
+                    index === editingIndex
+                        ? { id: editSubjectId.trim(), subject: editSubjectName.trim() }
+                        : user
+                );
+                setUsers(updatedUsers);
+                setEditSubjectId('');
+                setEditSubjectName('');
+                setEditingIndex(-1);
+                setShowEditForm(false);
+                setEditError('');
+            } catch (error) {
+                setEditError('Có lỗi khi cập nhật môn học: ' + error.message);
+            }
         }
     };
-    const handleSubmit = e => {
+
+    const handleSubmit = async e => {
         e.preventDefault();
         if (subjectId.trim() && subjectName.trim()) {
             // Check if subject ID already exists
@@ -134,20 +172,33 @@ export default function AdjustSubjectList() {
                 alert('Subject ID already exists! Please use a different ID.');
                 return;
             }
-
-            // Add new subject to the users array
-            const newSubject = {
-                id: subjectId.trim(),
-                subject: subjectName.trim(),
+            // Gọi API thêm môn học
+            const payload = {
+                subjectId: subjectId.trim(),
+                subjectName: subjectName.trim(),
             };
-            setUsers(prevUsers => [...prevUsers, newSubject]);
-
-            // Reset form and close
-            setSubjectId('');
-            setSubjectName('');
-            setShowForm(false);
-
-            console.log('New Subject added:', newSubject);
+            try {
+                const response = await fetch('http://localhost:3000/subject/add-subject', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                if (!response.ok) throw new Error('Failed to add subject');
+                await response.json();
+                // Add new subject to the users array
+                const newSubject = {
+                    id: subjectId.trim(),
+                    subject: subjectName.trim(),
+                };
+                setUsers(prevUsers => [...prevUsers, newSubject]);
+                // Reset form and close
+                setSubjectId('');
+                setSubjectName('');
+                setShowForm(false);
+                console.log('New Subject added:', newSubject);
+            } catch (error) {
+                alert('Có lỗi khi thêm môn học: ' + error.message);
+            }
         }
     };
 
@@ -159,6 +210,24 @@ export default function AdjustSubjectList() {
             setUsers(initialUsers);
             localStorage.setItem('subjectList', JSON.stringify(initialUsers));
             console.log('Subject list restored to original');
+        }
+    };
+
+    const handleDelete = async (subjectId, idx) => {
+        if (!window.confirm('Bạn có chắc chắn muốn xóa môn học này?')) return;
+        try {
+            const response = await fetch('http://localhost:3000/subject/delete-subject', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subjectId }),
+            });
+            if (!response.ok) throw new Error('Failed to delete subject');
+            // Xóa khỏi danh sách local
+            const updated = [...users];
+            updated.splice(idx, 1);
+            setUsers(updated);
+        } catch (error) {
+            alert('Có lỗi khi xóa môn học: ' + error.message);
         }
     };
 
@@ -203,18 +272,24 @@ export default function AdjustSubjectList() {
                                     <tr key={index}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                             {user.id}
-                                        </td>{' '}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {user.subject}
-                                        </td>{' '}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
                                             <button
-                                                className="bg-indigo-500 hover:bg-indigo-600 text-white py-1 px-3 rounded-md text-sm transition duration-300"
+                                                className="bg-indigo-500 hover:bg-indigo-600 text-white py-1 px-3 rounded-md text-sm transition duration-300 mr-2"
                                                 onClick={() => handleEdit(index)}
                                             >
                                                 Edit
                                             </button>
-                                        </td>{' '}
+                                            <button
+                                                className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md text-sm transition duration-300"
+                                                onClick={() => handleDelete(user.id, index)}
+                                            >
+                                                Delete
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -311,6 +386,7 @@ export default function AdjustSubjectList() {
                                     required
                                 />
                             </div>
+                            {editError && <div className="text-red-500 mb-4 text-sm">{editError}</div>}
                             <div className="flex justify-end space-x-3">
                                 <button
                                     type="button"

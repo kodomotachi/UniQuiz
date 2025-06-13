@@ -1,171 +1,94 @@
+-- Tạo database
+CREATE DATABASE testing;
+GO
+
+-- Sử dụng database vừa tạo
 USE testing;
 GO
 
--- Xóa và tạo lại spThemLopHoc
-IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'spThemLopHoc')
-    DROP PROCEDURE spThemLopHoc;
+-- Bảng Lớp
+CREATE TABLE Lop (
+    MALOP NCHAR(8) PRIMARY KEY,
+    TENLOP NVARCHAR(40) UNIQUE NOT NULL,
+    CONSTRAINT CK_Lop_MALOP_UPPER CHECK (MALOP = UPPER(MALOP))
+);
 GO
 
-CREATE PROCEDURE spThemLopHoc
-@MaLop nchar(8),
-@TenLop nvarchar(40)
-AS
-BEGIN
-    INSERT INTO Lop(MALOP, TENLOP)
-    VALUES (@MaLop, @TenLop);
-END;
+-- Bảng Môn học
+CREATE TABLE Monhoc (
+    MAMH NCHAR(5) PRIMARY KEY,
+    TENMH NVARCHAR(40) UNIQUE NOT NULL,
+    CONSTRAINT CK_Monhoc_MAMH_UPPER CHECK (MAMH = UPPER(MAMH))
+);
 GO
 
-IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'spXemMonHoc')
-	DROP PROCEDURE spXemMonHoc;
+-- Bảng Sinh viên
+CREATE TABLE Sinhvien (
+    MASV NCHAR(8) PRIMARY KEY,
+    HO NVARCHAR(10),
+    TEN NVARCHAR(40),
+    NGAYSINH DATE,
+    DIACHI NVARCHAR(100),
+    MALOP NCHAR(8) FOREIGN KEY REFERENCES Lop(MALOP),
+    CONSTRAINT CK_Sinhvien_MALOP_UPPER CHECK (MALOP = UPPER(MALOP))
+);
 GO
 
-CREATE PROCEDURE spXemMonHoc
-AS
-BEGIN
-	SELECT * FROM Monhoc;
-END;
+-- Bảng Giáo viên
+CREATE TABLE Giaovien (
+    MAGV NCHAR(8) PRIMARY KEY,
+    HO NVARCHAR(10),
+    TEN NVARCHAR(40),
+    SODTLL NCHAR(15),
+    DIACHI NVARCHAR(50)
+);
 GO
 
--- Xóa và tạo lại spThemMonHoc
-IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'spThemMonHoc')
-    DROP PROCEDURE spThemMonHoc;
+-- Bảng Giáo viên đăng ký
+CREATE TABLE Giaovien_Dangky (
+    MAGV        NCHAR(8),
+    MALOP       NCHAR(8)   FOREIGN KEY REFERENCES Lop(MALOP),
+    MAMH        NCHAR(5),
+    TRINHDO     NCHAR(1)   CHECK (TRINHDO IN ('A', 'B', 'C')),
+    NGAYTHI     DATETIME   DEFAULT GETDATE(),
+    LAN         SMALLINT   CHECK (LAN >= 1 AND LAN <= 2),
+    SOCAUTHI    SMALLINT   CHECK (SOCAUTHI >= 10 AND SOCAUTHI <= 100),
+    THOIGIAN    SMALLINT   CHECK (THOIGIAN >= 5 AND THOIGIAN <= 60),
+    PRIMARY KEY (MALOP, MAMH, LAN),
+    CONSTRAINT FK_Giaovien_Dangky_MAGV FOREIGN KEY (MAGV) REFERENCES Giaovien(MAGV) ON DELETE CASCADE,
+    CONSTRAINT FK_Giaovien_Dangky_MAMH FOREIGN KEY (MAMH) REFERENCES Monhoc(MAMH) ON DELETE CASCADE,
+    CONSTRAINT CK_Giaovien_Dangky_MALOP_UPPER CHECK (MALOP = UPPER(MALOP)),
+    CONSTRAINT CK_Giaovien_Dangky_MAMH_UPPER CHECK (MAMH = UPPER(MAMH))
+);
 GO
 
-CREATE PROCEDURE spThemMonHoc
-@MaMHMoi nchar(5),
-@TenMHMoi nvarchar(40)
-AS
-BEGIN
-    INSERT INTO Monhoc(MAMH, TENMH)
-    VALUES (@MaMHMoi, @TenMHMoi);
-END;
+-- Bảng Bộ đề
+CREATE TABLE Bode (
+    MAMH NCHAR(5),
+    CAUHOI INT IDENTITY(1, 1) PRIMARY KEY,
+    TRINHDO NCHAR(1) CHECK (TRINHDO IN ('A', 'B', 'C')),
+    NOIDUNG NVARCHAR(200),
+    A NVARCHAR(50),
+    B NVARCHAR(50),
+    C NVARCHAR(50),
+    D NVARCHAR(50),
+    DAP_AN NCHAR(1), -- A/B/C/D
+    MAGV NCHAR(8),
+    CONSTRAINT FK_Bode_MAGV FOREIGN KEY (MAGV) REFERENCES Giaovien(MAGV) ON DELETE CASCADE,
+    CONSTRAINT FK_Bode_MAMH FOREIGN KEY (MAMH) REFERENCES Monhoc(MAMH) ON DELETE CASCADE,
+    CONSTRAINT CK_Bode_MAMH_UPPER CHECK (MAMH = UPPER(MAMH))
+);
 GO
 
--- Xóa và tạo lại spXoaMonHoc
-IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'spXoaMonHoc')
-    DROP PROCEDURE spXoaMonHoc;
-GO
-
-CREATE PROCEDURE spXoaMonHoc
-@MaMH nchar(5)
-AS
-BEGIN
-    DELETE FROM Monhoc
-    WHERE MAMH = @MaMH;
-END;
-GO
-
--- Xóa và tạo lại spXoaLopHoc
-IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'spXoaLopHoc')
-    DROP PROCEDURE spXoaLopHoc;
-GO
-
-CREATE PROCEDURE spXoaLopHoc
-@MaLop nchar(8)
-AS 
-BEGIN
-    DELETE FROM Lop 
-    WHERE MALOP = @MaLop;
-END;
-GO
-
--- Xóa và tạo lại spChinhsuaLopHoc
-IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'spChinhsuaLopHoc')
-    DROP PROCEDURE spChinhsuaLopHoc;
-GO
-
-CREATE PROCEDURE spChinhsuaLopHoc
-@MaLopCu nchar(8),
-@MaLopMoi nchar(8),
-@TenLopMoi nvarchar(40)
-AS
-BEGIN
-    UPDATE Lop
-    SET MALOP = @MaLopMoi,
-        TENLOP = @TenLopMoi
-    WHERE MALOP = @MaLopCu;
-END;
-GO
-
--- Xóa và tạo lại spChinhsuaMonHoc
-IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'spChinhsuaMonHoc')
-    DROP PROCEDURE spChinhsuaMonHoc;
-GO
-
-CREATE PROCEDURE spChinhsuaMonHoc
-@MaMonCu nchar(5),
-@MaMonMoi nchar(5),
-@TenMonMoi nvarchar(40)
-AS
-BEGIN
-    UPDATE Monhoc
-    SET MAMH = @MaMonMoi,
-        TENMH = @TenMonMoi
-    WHERE MAMH = @MaMonCu;
-END;
-GO
-
-IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'spXemGiaoVien')
-    DROP PROCEDURE spXemGiaoVien;
-GO
-
-CREATE PROCEDURE spXemGiaoVien
-AS 
-BEGIN
-	SELECT * FROM Giaovien;
-END;
-GO
-
-IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'spThemGiaoVien')
-	DROP PROCEDURE spThemGiaoVien;
-GO
-
-CREATE PROCEDURE spThemGiaoVien
-@MaGVMoi nchar(8),
-@HoMoi nchar(8),
-@TenMoi nvarchar(10),
-@SoDTLLMoi nchar(15),
-@DiaChiMoi nvarchar(50)
-AS
-BEGIN
-	INSERT INTO Giaovien(MAGV, HO, TEN, SODTLL, DIACHI)
-	VALUES (@MaGVMoi, @HoMoi, @TenMoi, @SoDTLLMoi, @DiaChiMoi);
-END;
-GO
-
-IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'spChinhsuaGiaoVien')
-	DROP PROCEDURE spChinhsuaGiaoVien;
-GO
-
-CREATE PROCEDURE spChinhsuaGiaoVien
-@MaGVCu nchar(8),
-@MaGVMoi nchar(8),
-@HoMoi nvarchar(10),
-@TenMoi nvarchar(40),
-@SoDTLLMoi nchar(15),
-@DiaChiMoi nvarchar(50)
-AS
-BEGIN
-	UPDATE Giaovien
-	SET MAGV = @MaGVMoi,
-		HO = @HoMoi,
-		TEN = @TenMoi,
-		SODTLL = @SoDTLLMoi,
-		DIACHI = @DiaChiMoi
-	WHERE MAGV = @MaGVCu;
-END;
-GO
-
-IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'spXoaGiaoVien')
-	DROP PROCEDURE spXoaGiaoVien;
-GO
-
-CREATE PROCEDURE spXoaGiaoVien
-@MaGV nchar(8)
-AS 
-BEGIN
-	DELETE FROM Giaovien
-	WHERE MAGV = @MaGV;
-END;
-GO
+-- Bảng Bảng điểm
+CREATE TABLE BangDiem (
+    MASV NCHAR(8) FOREIGN KEY REFERENCES Sinhvien(MASV),
+    MAMH NCHAR(5),
+    LAN SMALLINT CHECK (LAN >= 1 AND LAN <= 2),
+    NGAYTHI DATE DEFAULT GETDATE(),
+    DIEM FLOAT CHECK (DIEM >= 0 AND DIEM <= 10),
+    PRIMARY KEY (MASV, MAMH, LAN),
+    CONSTRAINT FK_BangDiem_MAMH FOREIGN KEY (MAMH) REFERENCES Monhoc(MAMH) ON DELETE CASCADE,
+    CONSTRAINT CK_BangDiem_MAMH_UPPER CHECK (MAMH = UPPER(MAMH))
+);
+GO 
