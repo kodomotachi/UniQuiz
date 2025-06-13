@@ -128,18 +128,22 @@ export default function AdjustTeacherList() {
             setEditError('Mã giáo viên đã được sử dụng bởi người khác!');
             return;
         }
-        // Chuẩn bị query string đúng định dạng yêu cầu
-        const params = new URLSearchParams({
+        // Chuẩn bị payload đúng định dạng API yêu cầu
+        const payload = {
             teacherId: teachers[editIndex].teacherId, // mã cũ
             newTeacherId: editData.teacherId, // mã mới (có thể giống mã cũ)
             teacherFirstName: editData.firstName,
             teacherLastName: editData.lastName,
             teacherPhoneNumber: editData.phoneNumber,
             teacherAddress: editData.address,
-        });
+        };
         try {
-            const response = await fetch(`http://localhost:3000/teacher/get-list?${params.toString()}`, {
-                method: 'GET',
+            const response = await fetch('http://localhost:3000/teacher/edit-teacher', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
             });
             if (!response.ok) {
                 throw new Error('Failed to update teacher');
@@ -152,6 +156,28 @@ export default function AdjustTeacherList() {
             setShowEditForm(false);
         } catch (error) {
             setEditError('Có lỗi khi cập nhật giáo viên: ' + error.message);
+        }
+    };
+
+    const handleDeleteClick = async (teacherId, idx) => {
+        if (!window.confirm('Bạn có chắc chắn muốn xóa giáo viên này?')) return;
+        try {
+            const response = await fetch('http://localhost:3000/teacher/delete-teacher', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ teacherId }),
+            });
+            if (!response.ok) {
+                throw new Error('Failed to delete teacher');
+            }
+            // Xóa khỏi danh sách local
+            const updated = [...teachers];
+            updated.splice(idx, 1);
+            setTeachers(updated);
+        } catch (error) {
+            alert('Có lỗi khi xóa giáo viên: ' + error.message);
         }
     };
 
@@ -316,8 +342,11 @@ export default function AdjustTeacherList() {
                                             {teacher.address}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <button className="bg-indigo-500 hover:bg-indigo-600 text-white py-1 px-3 rounded-md text-sm transition duration-300" onClick={() => handleEditClick(teacher, index)}>
+                                            <button className="bg-indigo-500 hover:bg-indigo-600 text-white py-1 px-3 rounded-md text-sm transition duration-300 mr-2" onClick={() => handleEditClick(teacher, index)}>
                                                 Edit
+                                            </button>
+                                            <button className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md text-sm transition duration-300" onClick={() => handleDeleteClick(teacher.teacherId, index)}>
+                                                Delete
                                             </button>
                                         </td>
                                     </tr>

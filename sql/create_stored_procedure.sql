@@ -156,3 +156,16 @@ BEGIN
 	WHERE MAGV = @MaGVCu;
 END;
 GO
+
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'spXoaGiaoVien')
+	DROP PROCEDURE spXoaGiaoVien;
+GO
+
+CREATE PROCEDURE spXoaGiaoVien
+@MaGV nchar(8)
+AS 
+BEGIN
+	DELETE FROM Giaovien
+	WHERE MAGV = @MaGV;
+END;
+GO
