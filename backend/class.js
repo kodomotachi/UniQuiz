@@ -53,6 +53,8 @@ async function addClass(classId, className) {
 			.input('MaLop', sql.NChar, classId)
 			.input('TenLop', sql.NVarChar, className)
 			.execute('spThemLopHoc');
+
+		return result
 	} catch (error) {
 		console.error('Error adding class:', error);
 		throw error;

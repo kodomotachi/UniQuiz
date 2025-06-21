@@ -36,27 +36,43 @@ async function getStudent() {
   }
 }
 
-async function addStudent(classId, className) {
+// async function addStudent(studentId, stundetFirstName, studentLastName, studentBirthday, studentAddress, studenttClassId) {
+//   const pool = await poolPromise;
+
+//   if (!pool)
+//     throw new Error('Can\'t connect to database');
+
+//   try {
+//     const result = await pool
+//       .request()
+//       .input()
+//   }
+// }
+
+async function deleteStudent(studentId) {
   const pool = await poolPromise;
 
-  if (!pool)
-    throw new Error('Can\'t connect to database');
+	if (!pool)
+		throw new Error('Can\'t connect to database');
 
   try {
     const result = await pool
       .request()
-      .input('MaLop', sql.VarChar, classId)
-      .input('TenLop', sql.NVarChar, className)
-      .query('EXEC spThemLopHoc @MaLop = @MaLop, @TenLop = @TenLop');
-
-    return result.recordset;
-  } catch (err) {
-    console.error('Query got error: ', err.message);
-    throw err;
+      .input('MaLop', sql.NChar, studentId)
+      .execute('spXoaLopHoc');
+    
+    return result;
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    throw error
   }
+}
+
+async function editStudent(studentId, newStudentId, ) {
+  
 }
 
 module.exports = {
   getStudent,
-  addStudent
+  deleteStudent
 };
