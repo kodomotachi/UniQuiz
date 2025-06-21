@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 const sql = require('mssql');
 
 const config = {
@@ -32,9 +33,9 @@ async function getClass() {
 	try {
 		const result = await pool
 			.request()
-			.execute('spThemLopHoc');
+			.query('SELECT MALOP as id, TENLOP as name FROM Lop');
 		
-		return result;
+		return result.recordset;
 	} catch (error) {
 		console.error('Error getting class list:', error);
 		throw error;

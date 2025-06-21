@@ -12,5 +12,14 @@
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "mssql": "^11.0.1"
+  },
+  "eslintConfig": {
+    "env": {
+      "node": true,
+      "es2021": true
+    },
+    "extends": [
+      "eslint:recommended"
+    ]
   }
 }

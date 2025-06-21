@@ -23,6 +23,15 @@ CREATE PROCEDURE spXoaLopHoc
 @MaLop nchar(8)
 AS 
 BEGIN
+    -- First, delete referencing records from Giaovien_Dangky
+    DELETE FROM Giaovien_Dangky
+    WHERE MALOP = @MaLop;
+
+    -- Second, delete referencing records from Sinhvien
+    DELETE FROM Sinhvien
+    WHERE MALOP = @MaLop;
+
+    -- Finally, delete the class itself
     DELETE FROM Lop 
     WHERE MALOP = @MaLop;
 END;

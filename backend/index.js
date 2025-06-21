@@ -1,8 +1,10 @@
+/* eslint-disable no-undef */
 const express = require('express');
 const cors = require('cors');
 const { getStudent, addStudent } = require('./student');
 const { getTeacher, addTeacher, editTeacher, deleteTeacher } = require('./teacher');
 const { addSubject, getSubject, editSubject, deleteSubject } = require('./subject');
+const { getClass, addClass, editClass, deleteClass } = require('./class');
 
 const app = express();
 const PORT = 3000;
@@ -15,7 +17,8 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get('/student/get-class', async (req, res) => {
   try {
-    const sinhviens = await getStudent();
+    const { classId } = req.body;
+    const sinhviens = await getStudent(classId);
     res.json(sinhviens);
   } catch (err) {
     res.status(500).json({ error: 'Lỗi khi lấy danh sách Sinhvien', message: err.message });
@@ -29,6 +32,49 @@ app.post('/student/add-class', async (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: "Query got error when add new class", message: err.message });
+  }
+});
+
+app.get('/class/get-class', async (req, res) => {
+  try {
+    const result = await getClass();
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({
+      error: 'Erorr when getting class\'s data', message: err.message
+    });
+  }
+});
+
+app.post('/class/add-class', async (req, res) => {
+  try {
+    const { id, name } = req.body;
+    const result = await addClass(id, name);
+    res.json({ success: true, message: "Class added successfully", result });
+  } catch (err) {
+    res.status(500).json({ error: "Query got error when adding new class", message: err.message });
+  }
+});
+
+app.post('/class/edit-class', async (req, res) => {
+  try {
+    const { classId, newClassId, className } = req.body;
+    const result = await editClass(classId, newClassId, className);
+    res.json({ success: true, message: "Class updated successfully", result });
+  } catch (err) {
+    res.status(500).json({ error: "Query got error when updating class", message: err.message });
+  }
+});
+
+app.post('/class/delete-class', async (req, res) => {
+  try {
+    const { classId } = req.body;
+    const result = await deleteClass(classId);
+
+    res.json({ success: true, message: "Class deleted successfully", result });
+  } catch (err) {
+    res.status(500).json({ error: "Query got error when deleting class", message: err.message });
   }
 });
 
@@ -131,6 +177,15 @@ app.post('/subject/delete-subject', async (req, res) => {
   }
 });
 
+app.get('/student/get-by-class/:classId', async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const students = await getStudent(classId);
+    res.json(students);
+  } catch (err) {
+    res.status(500).json({ error: 'Lỗi khi lấy danh sách Sinhvien', message: err.message });
+  }
+});
 
 (async () => {
   try {
