@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 const express = require('express');
 const cors = require('cors');
-const { getStudent, addStudent } = require('./student');
+const { getStudent, addStudent, editStudent, deleteStudent } = require('./student');
 const { getTeacher, addTeacher, editTeacher, deleteTeacher } = require('./teacher');
 const { addSubject, getSubject, editSubject, deleteSubject } = require('./subject');
 const { getClass, addClass, editClass, deleteClass } = require('./class');
@@ -25,13 +25,42 @@ app.get('/student/get-class', async (req, res) => {
   }
 });
 
-app.post('/student/add-class', async (req, res) => {
+app.post('/student/add-student', async (req, res) => {
   try {
-    const { classId, className } = req.body;
-    const result = await addStudent(classId, className);
+    const { studentId, studentFirstName, studentLastName, studentBirthday, studentAddress, studentClassId } = req.body;
+
+    console.log("Received student data:", req.body);
+
+    const result = await addStudent(studentId, studentFirstName, studentLastName, studentBirthday, studentAddress, studentClassId);
+  
+    res.json({ success: true, message: "Student added successfully", result });
+  } catch (err) {
+    res.status(500).json({ error: "Query got error when adding student", message: err.message });
+  }
+});
+
+app.post('/student/edit-student', async (req, res) => {
+  try {
+    const { studentId, newStudentId, studentFirstName, studentLastName, studentBirthday, studentAddress } = req.body;
+    const result = await editStudent(studentId, newStudentId, studentFirstName, studentLastName, studentBirthday, studentAddress);
+
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: "Query got error when add new class", message: err.message });
+    res.sttus(500).json({ error: "Query got error when update student", message: err.message });
+  }
+});
+
+app.post('/student/delete-student', async (req, res) => {
+  try {
+    const { studentId } = req.body;
+
+    console.log("Received student data:", req.body);
+
+    const result = await deleteStudent(studentId);
+
+    res.json({ success: true, message: "Student deleted successfully", result });
+  } catch (err) {
+    res.status(500).json({ error: "Query got error when deleting student", message: err.message });
   }
 });
 

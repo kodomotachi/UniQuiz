@@ -83,8 +83,8 @@ async function deleteStudent(studentId) {
   try {
     const result = await pool
       .request()
-      .input('MaLop', sql.NChar, studentId)
-      .execute('spXoaLopHoc');
+      .input('MaSinhVien', sql.NChar, studentId)
+      .execute('spXoaSinhVien');
     
     return result;
   } catch (error) {
