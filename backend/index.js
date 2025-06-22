@@ -5,6 +5,7 @@ const { getStudent, addStudent, editStudent, deleteStudent } = require('./studen
 const { getTeacher, addTeacher, editTeacher, deleteTeacher } = require('./teacher');
 const { addSubject, getSubject, editSubject, deleteSubject } = require('./subject');
 const { getClass, addClass, editClass, deleteClass } = require('./class');
+const { getQuestionsBySubject, addQuestion, editQuestion, deleteQuestion } = require('./question');
 
 const app = express();
 const PORT = 3000;
@@ -213,6 +214,47 @@ app.get('/student/get-by-class/:classId', async (req, res) => {
     res.json(students);
   } catch (err) {
     res.status(500).json({ error: 'Lỗi khi lấy danh sách Sinhvien', message: err.message });
+  }
+});
+
+// Question API Endpoints
+app.get('/question/get-by-subject/:subjectId', async (req, res) => {
+  try {
+    const { subjectId } = req.params;
+    const questions = await getQuestionsBySubject(subjectId);
+    res.json(questions);
+  } catch (err) {
+    res.status(500).json({ error: 'Error when getting questions', message: err.message });
+  }
+});
+
+app.post('/question/add', async (req, res) => {
+  try {
+    const { subjectId, level, content, optionA, optionB, optionC, optionD, correctAnswer, teacherId } = req.body;
+    const result = await addQuestion(subjectId, level, content, optionA, optionB, optionC, optionD, correctAnswer, teacherId);
+    res.json({ success: true, message: "Question added successfully", result });
+  } catch (err) {
+    res.status(500).json({ error: "Query got error when adding new question", message: err.message });
+  }
+});
+
+app.post('/question/edit', async (req, res) => {
+  try {
+    const { questionId, subjectId, level, content, optionA, optionB, optionC, optionD, correctAnswer } = req.body;
+    await editQuestion(questionId, subjectId, level, content, optionA, optionB, optionC, optionD, correctAnswer);
+    res.json({ success: true, message: "Question updated successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Query got error when updating question", message: err.message });
+  }
+});
+
+app.post('/question/delete', async (req, res) => {
+  try {
+    const { questionId } = req.body;
+    await deleteQuestion(questionId);
+    res.json({ success: true, message: "Question deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Query got error when deleting question", message: err.message });
   }
 });
 

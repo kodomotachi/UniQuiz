@@ -23,3 +23,8 @@ const poolPromise = new sql.ConnectionPool(config)
 	return null;
   });
 
+module.exports = {
+	pool: poolPromise,
+	sql: sql
+};
+

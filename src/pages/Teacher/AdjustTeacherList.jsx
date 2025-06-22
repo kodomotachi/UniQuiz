@@ -4,11 +4,11 @@ export default function AdjustTeacherList() {
     const [showForm, setShowForm] = useState(false);
     const [teachers, setTeachers] = useState([]);
     const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
-        teacherId: '',
-        phoneNumber: '',
-        address: '',
+        HO: '',
+        TEN: '',
+        MAGV: '',
+        SODTLL: '',
+        DIACHI: '',
     });
     const [showEditForm, setShowEditForm] = useState(false);
     const [editData, setEditData] = useState(null);
@@ -28,15 +28,11 @@ export default function AdjustTeacherList() {
                     throw new Error('Failed to fetch teachers');
                 }
                 const data = await response.json();
-                // Map API fields to frontend fields
-                const mapped = data.map(item => ({
-                    firstName: item.HO,
-                    lastName: item.TEN,
-                    teacherId: item.MAGV,
-                    phoneNumber: item.SODTLL,
-                    address: item.DIACHI,
-                }));
-                setTeachers(mapped);
+                if (data.success) {
+                    setTeachers(data.result);
+                } else {
+                    throw new Error(data.message || 'Failed to fetch teachers');
+                }
             } catch (error) {
                 console.error('Error fetching teachers:', error);
             }
@@ -71,11 +67,11 @@ export default function AdjustTeacherList() {
         e.preventDefault();
         // Chuẩn bị dữ liệu đúng định dạng API yêu cầu
         const payload = {
-            teacherId: formData.teacherId,
-            teacherFirstName: formData.firstName,
-            teacherLastName: formData.lastName,
-            teacherPhoneNumber: formData.phoneNumber,
-            teacherAddress: formData.address,
+            teacherId: formData.MAGV,
+            teacherFirstName: formData.HO,
+            teacherLastName: formData.TEN,
+            teacherPhoneNumber: formData.SODTLL,
+            teacherAddress: formData.DIACHI,
         };
         try {
             const response = await fetch('http://localhost:3000/teacher/add-teacher', {
@@ -93,11 +89,11 @@ export default function AdjustTeacherList() {
             setTeachers([...teachers, formData]);
             // Reset form và ẩn form
             setFormData({
-                firstName: '',
-                lastName: '',
-                teacherId: '',
-                phoneNumber: '',
-                address: '',
+                HO: '',
+                TEN: '',
+                MAGV: '',
+                SODTLL: '',
+                DIACHI: '',
             });
             setShowForm(false);
         } catch (error) {
@@ -123,19 +119,19 @@ export default function AdjustTeacherList() {
     const handleEditSubmit = async e => {
         e.preventDefault();
         // Kiểm tra trùng mã giáo viên
-        const duplicate = teachers.some((t, idx) => t.teacherId === editData.teacherId && idx !== editIndex);
+        const duplicate = teachers.some((t, idx) => t.MAGV === editData.MAGV && idx !== editIndex);
         if (duplicate) {
             setEditError('Mã giáo viên đã được sử dụng bởi người khác!');
             return;
         }
         // Chuẩn bị payload đúng định dạng API yêu cầu
         const payload = {
-            teacherId: teachers[editIndex].teacherId, // mã cũ
-            newTeacherId: editData.teacherId, // mã mới (có thể giống mã cũ)
-            teacherFirstName: editData.firstName,
-            teacherLastName: editData.lastName,
-            teacherPhoneNumber: editData.phoneNumber,
-            teacherAddress: editData.address,
+            teacherId: teachers[editIndex].MAGV, // mã cũ
+            newTeacherId: editData.MAGV, // mã mới (có thể giống mã cũ)
+            teacherFirstName: editData.HO,
+            teacherLastName: editData.TEN,
+            teacherPhoneNumber: editData.SODTLL,
+            teacherAddress: editData.DIACHI,
         };
         try {
             const response = await fetch('http://localhost:3000/teacher/edit-teacher', {
@@ -220,8 +216,8 @@ export default function AdjustTeacherList() {
                                         </label>
                                         <input
                                             type="text"
-                                            name="firstName"
-                                            value={formData.firstName}
+                                            name="HO"
+                                            value={formData.HO}
                                             onChange={handleInputChange}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             required
@@ -233,8 +229,8 @@ export default function AdjustTeacherList() {
                                         </label>
                                         <input
                                             type="text"
-                                            name="lastName"
-                                            value={formData.lastName}
+                                            name="TEN"
+                                            value={formData.TEN}
                                             onChange={handleInputChange}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             required
@@ -246,8 +242,8 @@ export default function AdjustTeacherList() {
                                         </label>
                                         <input
                                             type="text"
-                                            name="teacherId"
-                                            value={formData.teacherId}
+                                            name="MAGV"
+                                            value={formData.MAGV}
                                             onChange={handleInputChange}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             required
@@ -259,8 +255,8 @@ export default function AdjustTeacherList() {
                                         </label>
                                         <input
                                             type="tel"
-                                            name="phoneNumber"
-                                            value={formData.phoneNumber}
+                                            name="SODTLL"
+                                            value={formData.SODTLL}
                                             onChange={handleInputChange}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             required
@@ -272,8 +268,8 @@ export default function AdjustTeacherList() {
                                         </label>
                                         <input
                                             type="text"
-                                            name="address"
-                                            value={formData.address}
+                                            name="DIACHI"
+                                            value={formData.DIACHI}
                                             onChange={handleInputChange}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             required
@@ -325,27 +321,27 @@ export default function AdjustTeacherList() {
                             {/* {" "} */}
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {teachers.map((teacher, index) => (
-                                    <tr key={index}>
+                                    <tr key={teacher.MAGV}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {teacher.firstName}
+                                            {teacher.HO}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 w-50">
-                                            {teacher.lastName}
+                                            {teacher.TEN}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {teacher.teacherId}
+                                            {teacher.MAGV}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {teacher.phoneNumber}
+                                            {teacher.SODTLL}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {teacher.address}
+                                            {teacher.DIACHI}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
                                             <button className="bg-indigo-500 hover:bg-indigo-600 text-white py-1 px-3 rounded-md text-sm transition duration-300 mr-2" onClick={() => handleEditClick(teacher, index)}>
                                                 Edit
                                             </button>
-                                            <button className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md text-sm transition duration-300" onClick={() => handleDeleteClick(teacher.teacherId, index)}>
+                                            <button className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md text-sm transition duration-300" onClick={() => handleDeleteClick(teacher.MAGV, index)}>
                                                 Delete
                                             </button>
                                         </td>
@@ -369,23 +365,23 @@ export default function AdjustTeacherList() {
                                 <form onSubmit={handleEditSubmit}>
                                     <div className="mb-4">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                                        <input type="text" name="firstName" value={editData.firstName} onChange={handleEditInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                                        <input type="text" name="HO" value={editData.HO} onChange={handleEditInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
                                     </div>
                                     <div className="mb-4">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                                        <input type="text" name="lastName" value={editData.lastName} onChange={handleEditInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                                        <input type="text" name="TEN" value={editData.TEN} onChange={handleEditInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
                                     </div>
                                     <div className="mb-4">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Teacher ID</label>
-                                        <input type="text" name="teacherId" value={editData.teacherId} onChange={handleEditInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                                        <input type="text" name="MAGV" value={editData.MAGV} onChange={handleEditInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
                                     </div>
                                     <div className="mb-4">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                                        <input type="tel" name="phoneNumber" value={editData.phoneNumber} onChange={handleEditInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                                        <input type="tel" name="SODTLL" value={editData.SODTLL} onChange={handleEditInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
                                     </div>
                                     <div className="mb-6">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                                        <input type="text" name="address" value={editData.address} onChange={handleEditInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                                        <input type="text" name="DIACHI" value={editData.DIACHI} onChange={handleEditInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
                                     </div>
                                     {editError && <div className="text-red-500 mb-4 text-sm">{editError}</div>}
                                     <div className="flex justify-end space-x-3">
