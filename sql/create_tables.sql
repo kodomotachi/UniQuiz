@@ -92,3 +92,13 @@ CREATE TABLE BangDiem (
     CONSTRAINT CK_BangDiem_MAMH_UPPER CHECK (MAMH = UPPER(MAMH))
 );
 GO 
+
+CREATE TABLE Taikhoan_Giaovien (
+    MAGV NVARCHAR(20) NOT NULL PRIMARY KEY, -- mã giáo viên / tên đăng nhập
+    MATKHAU VARCHAR(256) NOT NULL            -- mật khẩu đã được băm
+);
+
+CREATE TABLE Taikhoan_Sinhvien (
+    MASV NVARCHAR(20) NOT NULL PRIMARY KEY,  -- mã sinh viên / tên đăng nhập
+    MATKHAU VARCHAR(256) NOT NULL            -- mật khẩu đã được băm
+);

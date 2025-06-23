@@ -2,7 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 const { getStudent, addStudent, editStudent, deleteStudent } = require('./student');
-const { getTeacher, addTeacher, editTeacher, deleteTeacher } = require('./teacher');
+const { getTeacher, addTeacher, editTeacher, deleteTeacher, loginTeacher } = require('./teacher');
 const { addSubject, getSubject, editSubject, deleteSubject } = require('./subject');
 const { getClass, addClass, editClass, deleteClass } = require('./class');
 const { getQuestionsBySubject, addQuestion, editQuestion, deleteQuestion } = require('./question');
@@ -154,6 +154,19 @@ app.post('/teacher/delete-teacher', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Query got error when delete teacher", message: err.message });
   }
+});
+
+app.post('/teacher/login', async (req, res) => {
+	try {
+		const { teacherId, password } = req.body;
+		if (!teacherId || !password) {
+			return res.status(400).json({ error: 'Teacher ID and password are required' });
+		}
+		const result = await loginTeacher(teacherId, password);
+		res.json(result);
+	} catch (err) {
+		res.status(401).json({ error: 'Authentication failed', message: err.message });
+	}
 });
 
 app.get('/subject/get-subject', async (req, res) => {

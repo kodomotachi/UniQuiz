@@ -1,5 +1,6 @@
 import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import "./index.css";
@@ -12,12 +13,39 @@ import PrepareExamination from "./pages/Teacher/PrepareExamination";
 import TeacherDashboardButton from "./pages/TeacherDashboardButton";
 import CheckTable from "./CheckTable";
 
+const ProtectedRoute = ({ children }) => {
+   const token = localStorage.getItem('token');
+   if (!token) {
+      return <Navigate to="/signin" />;
+   }
+
+   try {
+      const decodedToken = jwtDecode(token);
+      // Check if the user is the specific admin user
+      if (decodedToken.id !== 'admin') {
+         return <Navigate to="/signin" />; 
+      }
+   } catch (error) {
+      console.error("Invalid token:", error);
+      return <Navigate to="/signin" />;
+   }
+
+   return children;
+};
+
 function App() {
    return (
       <BrowserRouter>
          {" "}
          <Routes>
-            <Route path="/teacher-dashboard" element={<TeacherDashboard />}>
+            <Route 
+               path="/teacher-dashboard" 
+               element={
+                  <ProtectedRoute>
+                     <TeacherDashboard />
+                  </ProtectedRoute>
+               }
+            >
                <Route index element={<TeacherDashboardButton />} />
                <Route
                   path="adjust-subject-list"

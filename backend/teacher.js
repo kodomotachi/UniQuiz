@@ -1,37 +1,55 @@
 /* eslint-disable no-undef */
-const sql = require('mssql');
+const { pool, sql } = require('./config_server');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
-const config = {
-  user: 'sa', 
-  password: 'Huy27022004',
-  server: 'localhost',
-  database: 'testing',
-  port: 1433,
-  options: {
-    trustServerCertificate: true,
-    encrypt: false, // để true nếu bạn dùng Azure hoặc SSL
-  },
-};
+const JWT_SECRET = 'your_jwt_secret_key'; // You should use an environment variable for this
 
-const poolPromise = new sql.ConnectionPool(config)
-  .connect()
-  .then(pool => {
-    console.log('✅ Kết nối SQL Server thành công');
-    return pool;
-  })
-  .catch(err => {
-    console.error('❌ Lỗi kết nối SQL Server:', err.message);
-    return null;
-  });
+async function loginTeacher(teacherId, password) {
+	const dbPool = await pool;
+
+	if (!dbPool) {
+		throw new Error("Can't connect to database");
+	}
+
+	try {
+		const result = await dbPool
+			.request()
+			.input('MAGV', sql.NVarChar(20), teacherId)
+			.query('SELECT * FROM Taikhoan_Giaovien WHERE MAGV = @MAGV');
+
+		if (result.recordset.length === 0) {
+			throw new Error('Tài khoản không tồn tại');
+		}
+
+		const teacherAccount = result.recordset[0];
+
+		const isMatch = await bcrypt.compare(password, teacherAccount.MATKHAU);
+
+		if (!isMatch) {
+			throw new Error('Mật khẩu không đúng');
+		}
+
+		const token = jwt.sign({ id: teacherAccount.MAGV, role: 'teacher' }, JWT_SECRET, {
+			expiresIn: '1h',
+		});
+
+		return { token };
+
+	} catch (error) {
+		console.error('Error during teacher login: ', error.message);
+		throw error;
+	}
+}
 
 async function getTeacher() {
-  const pool = await poolPromise;
+  const dbPool = await pool;
 
-  if (!pool)
+  if (!dbPool)
     throw new Error('Can\'t connect to database');
 
   try {
-    const result = await pool
+    const result = await dbPool
       .request()
       .query('SELECT * FROM Giaovien');
 
@@ -43,16 +61,16 @@ async function getTeacher() {
 }
 
 async function addTeacher(teacherId, teacherFirstName, teacherLastName, teacherPhoneNumber, teacherAddress) {
-  const pool = await poolPromise;
+  const dbPool = await pool;
 
-  if (!pool)
+  if (!dbPool)
     throw new Error('Can\'t connect to database');
 
   try {
     // Log the input values for debugging
     console.log('Adding teacher with ID:', teacherId);
     
-    const result = await pool
+    const result = await dbPool
       .request()
       .input('MaGVMoi', sql.NChar, teacherId)
       .input('HoMoi', sql.NVarChar, teacherFirstName)
@@ -69,13 +87,13 @@ async function addTeacher(teacherId, teacherFirstName, teacherLastName, teacherP
 }
 
 async function editTeacher(teacherId, newTeacherId, teacherFirstName, teacherLastName, teacherPhoneNumber, teacherAddress) {
-	const pool = await poolPromise;
+	const dbPool = await pool;
 
-	if (!pool)
+	if (!dbPool)
 		throw new Error('Can\'t connect to database');
 
 	try {
-		const result = await pool
+		const result = await dbPool
 			.request()
 			.input('MaGVCu', sql.NChar, teacherId)
 			.input('MaGVMoi', sql.NChar, newTeacherId)
@@ -93,13 +111,13 @@ async function editTeacher(teacherId, newTeacherId, teacherFirstName, teacherLas
 }
 
 async function deleteTeacher(teacherId) {
-  const pool = await poolPromise;
+  const dbPool = await pool;
 
-  if (!pool)
+  if (!dbPool)
     throw new Error('Can\'t connect to database');
 
   try {
-    const result = await pool
+    const result = await dbPool
       .request()
       .input('MaGV', sql.NChar, teacherId)
       .execute('spXoaGiaoVien');
@@ -112,6 +130,7 @@ async function deleteTeacher(teacherId) {
 }
 
 module.exports = {
+	loginTeacher,
 	getTeacher,
 	addTeacher,
   editTeacher, 

@@ -2,12 +2,13 @@ import { useState } from "react";
 import NavBar from "../components/NavBar/NavBar";
 import "../index.css";
 import Password from "../components/Input/Password";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function SignIn() {
    const [email, setEmail] = useState("");
    const [password, setPassword] = useState("");
    const [selectedRole, setSelectedRole] = useState("");
+   const navigate = useNavigate();
 
    const roles = ["Teacher", "Student"];
 
@@ -20,12 +21,40 @@ export default function SignIn() {
          return "Login";
    }
 
+   const handleLogin = async (e) => {
+      e.preventDefault();
+      if (selectedRole === "Teacher") {
+         try {
+            const response = await fetch('http://localhost:3000/teacher/login', {
+               method: 'POST',
+               headers: {
+                  'Content-Type': 'application/json',
+               },
+               body: JSON.stringify({ teacherId: email, password: password }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+               localStorage.setItem('token', data.token);
+               navigate('/teacher-dashboard');
+            } else {
+               alert(data.message || 'Login failed');
+            }
+         } catch (error) {
+            console.error('Login error:', error);
+            alert('An error occurred during login.');
+         }
+      }
+      // you can add student login logic here later
+   };
+
    return (
       <>
          <NavBar />
          <div className="flex items-center justify-center h-screen">
             <div className="border border-gray-400 bg-white rounded-xl px-10 py-2 shadow-md w-[650px] h-[500px]">
-               <form onSubmit={() => {}}>
+               <form onSubmit={handleLogin}>
                   <h4 className="text-2xl my-9 text-center">Login</h4>
 
                   <div className="w-full flex items-center justify-center mb-5">
@@ -56,7 +85,6 @@ export default function SignIn() {
                      className="login-email-box"
                      value={email}
                      onChange={(e) => {
-                        console.log("Email:", e.target.value);
                         setEmail(e.target.value);
                      }}
                   />
