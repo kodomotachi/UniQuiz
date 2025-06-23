@@ -5,7 +5,8 @@ const { getStudent, addStudent, editStudent, deleteStudent } = require('./studen
 const { getTeacher, addTeacher, editTeacher, deleteTeacher, loginTeacher } = require('./teacher');
 const { addSubject, getSubject, editSubject, deleteSubject } = require('./subject');
 const { getClass, addClass, editClass, deleteClass } = require('./class');
-const { getQuestionsBySubject, addQuestion, editQuestion, deleteQuestion } = require('./question');
+const { getQuestionsBySubject, addQuestion, editQuestion, deleteQuestion, countQuestions } = require('./question');
+const { getExaminations, addExamination, editExamination, deleteExamination } = require('./examination');
 
 const app = express();
 const PORT = 3000;
@@ -241,6 +242,19 @@ app.get('/question/get-by-subject/:subjectId', async (req, res) => {
   }
 });
 
+app.get('/question/count', async (req, res) => {
+    try {
+        const { mamh, trinhdo } = req.query;
+        if (!mamh || !trinhdo) {
+            return res.status(400).json({ error: 'Subject ID and Level are required' });
+        }
+        const count = await countQuestions(mamh, trinhdo);
+        res.json({ count });
+    } catch (err) {
+        res.status(500).json({ error: 'Error counting questions', message: err.message });
+    }
+});
+
 app.post('/question/add', async (req, res) => {
   try {
     const { subjectId, level, content, optionA, optionB, optionC, optionD, correctAnswer, teacherId } = req.body;
@@ -271,10 +285,50 @@ app.post('/question/delete', async (req, res) => {
   }
 });
 
+// Examination API Endpoints
+app.get('/examination/get-all', async (req, res) => {
+    try {
+        const examinations = await getExaminations();
+        res.json(examinations);
+    } catch (err) {
+        res.status(500).json({ error: 'Error when getting examinations', message: err.message });
+    }
+});
+
+app.post('/examination/add', async (req, res) => {
+    try {
+        const { magv, malop, mamh, trinhdo, ngaythi, lan, socauthi, thoigian } = req.body;
+        const result = await addExamination(magv, malop, mamh, trinhdo, ngaythi, lan, socauthi, thoigian);
+        res.json({ success: true, message: "Examination added successfully", result });
+    } catch (err) {
+        res.status(500).json({ error: "Query got error when adding new examination", message: err.message });
+    }
+});
+
+app.post('/examination/edit', async (req, res) => {
+    try {
+        const { malop, mamh, lan, trinhdo, ngaythi, socauthi, thoigian } = req.body;
+        await editExamination(malop, mamh, lan, trinhdo, ngaythi, socauthi, thoigian);
+        res.json({ success: true, message: "Examination updated successfully" });
+    } catch (err) {
+        res.status(500).json({ error: "Query got error when updating examination", message: err.message });
+    }
+});
+
+app.post('/examination/delete', async (req, res) => {
+    try {
+        const { malop, mamh, lan } = req.body;
+        await deleteExamination(malop, mamh, lan);
+        res.json({ success: true, message: "Examination deleted successfully" });
+    } catch (err) {
+        res.status(500).json({ error: "Query got error when deleting examination", message: err.message });
+    }
+});
+
 (async () => {
   try {
     app.listen(PORT, () => {
-      console.log(`🚀 Server is running on http://localhost:${PORT}`);
+      console.log(`✅ Server is running on http://localhost:${PORT}`);
     });
   } catch (err) {
     console.error('❌ Lỗi khi chạy test:', err.message);

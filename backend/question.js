@@ -87,9 +87,25 @@ const deleteQuestion = async (questionId) => {
     }
 };
 
+const countQuestions = async (mamh, trinhdo) => {
+    try {
+        const dbPool = await pool;
+        const result = await dbPool
+            .request()
+            .input('MAMH', sql.NChar(5), mamh)
+            .input('TRINHDO', sql.NChar(1), trinhdo)
+            .query('SELECT COUNT(*) as questionCount FROM Bode WHERE MAMH = @MAMH AND TRINHDO = @TRINHDO');
+        return result.recordset[0].questionCount;
+    } catch (err) {
+        console.error('Error in countQuestions:', err);
+        throw err;
+    }
+};
+
 module.exports = {
     getQuestionsBySubject,
     addQuestion,
     editQuestion,
-    deleteQuestion
+    deleteQuestion,
+    countQuestions
 }; 
