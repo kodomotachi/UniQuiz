@@ -111,14 +111,14 @@ export default function AdjustQuestionList() {
 
 	const handleAddQuestion = async () => {
 		if (!validateForm(newQuestion)) return;
-
 		try {
-			// Hard-coded teacher ID as per schema. Replace if dynamic teacher login is implemented.
-			const teacherId = 'GV001'; 
-			
+			// Lấy teacherId từ token
+			const token = localStorage.getItem('token');
+			const payload = JSON.parse(atob(token.split('.')[1]));
+			const teacherId = payload.id;
 			const response = await fetch('http://localhost:3000/question/add', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+				headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
 				body: JSON.stringify({
 					subjectId: selectedSubject.MAMH,
 					level: newQuestion.TRINHDO,
@@ -131,17 +131,13 @@ export default function AdjustQuestionList() {
 					teacherId: teacherId
 				}),
 			});
-
 			if (!response.ok) throw new Error('Failed to add question');
-			
 			// Refetch questions to show the new one
 			const updatedQuestionsResponse = await fetch(`http://localhost:3000/question/get-by-subject/${selectedSubject.MAMH}`);
 			const updatedData = await updatedQuestionsResponse.json();
 			setQuestions(updatedData);
-
 			setShowAddForm(false);
 			resetNewQuestionForm();
-
 		} catch (error) {
 			setFormError('An error occurred while adding the question.');
 			console.error(error);
@@ -150,11 +146,11 @@ export default function AdjustQuestionList() {
 
 	const handleEditQuestion = async () => {
 		if (!editingQuestion || !validateForm(editingQuestion)) return;
-		
 		try {
+			const token = localStorage.getItem('token');
 			const response = await fetch('http://localhost:3000/question/edit', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+				headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
 				body: JSON.stringify({
 					questionId: editingQuestion.CAUHOI,
 					subjectId: editingQuestion.MAMH,
@@ -167,16 +163,11 @@ export default function AdjustQuestionList() {
 					correctAnswer: editingQuestion.DAP_AN
 				}),
 			});
-
 			if (!response.ok) throw new Error('Failed to update question');
-
-			// Update question in local state
 			setQuestions(questions.map(q => q.CAUHOI === editingQuestion.CAUHOI ? editingQuestion : q));
-			
 			setShowEditForm(false);
 			setEditingQuestion(null);
 			setFormError('');
-
 		} catch (error) {
 			setFormError('An error occurred while updating the question.');
 			console.error(error);
@@ -185,21 +176,17 @@ export default function AdjustQuestionList() {
 	
 	const handleDeleteQuestion = async () => {
 		if (!deletingQuestionId) return;
-
 		try {
+			const token = localStorage.getItem('token');
 			const response = await fetch('http://localhost:3000/question/delete', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+				headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
 				body: JSON.stringify({ questionId: deletingQuestionId }),
 			});
-
 			if (!response.ok) throw new Error('Failed to delete question');
-			
 			setQuestions(questions.filter(q => q.CAUHOI !== deletingQuestionId));
-			
 			setShowDeleteConfirm(false);
 			setDeletingQuestionId(null);
-
 		} catch (error) {
 			console.error('Error deleting question:', error);
 		}

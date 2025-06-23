@@ -19,6 +19,10 @@ async function addExamination(magv, malop, mamh, trinhdo, ngaythi, lan, socauthi
     const dbPool = await pool;
     if (!dbPool) throw new Error("Can't connect to database");
 
+    if (new Date(ngaythi) < new Date()) {
+        throw new Error('Không thể tạo phiên thi với thời gian trong quá khứ!');
+    }
+
     const availableQuestions = await countQuestions(mamh, trinhdo);
 
     if (availableQuestions < socauthi) {
@@ -44,12 +48,20 @@ async function addExamination(magv, malop, mamh, trinhdo, ngaythi, lan, socauthi
     }
 }
 
-async function editExamination(malop, mamh, lan, newTrinhdo, newNgaythi, newSocauthi, newThoigian) {
+async function editExamination(malop, mamh, lan, newTrinhdo, newNgaythi, newSocauthi, newThoigian, magv) {
     const dbPool = await pool;
     if (!dbPool) throw new Error("Can't connect to database");
 
-    const availableQuestions = await countQuestions(mamh, newTrinhdo);
+    const exam = await dbPool.request()
+        .input('MALOP', sql.NChar(8), malop)
+        .input('MAMH', sql.NChar(5), mamh)
+        .input('LAN', sql.SmallInt, lan)
+        .query('SELECT MAGV FROM Giaovien_Dangky WHERE MALOP=@MALOP AND MAMH=@MAMH AND LAN=@LAN');
+    if (!exam.recordset.length || exam.recordset[0].MAGV.trim() !== magv.trim()) {
+        throw new Error('Bạn không có quyền chỉnh sửa phiên thi này!');
+    }
 
+    const availableQuestions = await countQuestions(mamh, newTrinhdo);
     if (availableQuestions < newSocauthi) {
         throw new Error(`Not enough questions. Available: ${availableQuestions}, Required: ${newSocauthi}`);
     }
@@ -72,9 +84,18 @@ async function editExamination(malop, mamh, lan, newTrinhdo, newNgaythi, newSoca
     }
 }
 
-async function deleteExamination(malop, mamh, lan) {
+async function deleteExamination(malop, mamh, lan, magv) {
     const dbPool = await pool;
     if (!dbPool) throw new Error("Can't connect to database");
+
+    const exam = await dbPool.request()
+        .input('MALOP', sql.NChar(8), malop)
+        .input('MAMH', sql.NChar(5), mamh)
+        .input('LAN', sql.SmallInt, lan)
+        .query('SELECT MAGV FROM Giaovien_Dangky WHERE MALOP=@MALOP AND MAMH=@MAMH AND LAN=@LAN');
+    if (!exam.recordset.length || exam.recordset[0].MAGV.trim() !== magv.trim()) {
+        throw new Error('Bạn không có quyền xóa phiên thi này!');
+    }
 
     try {
         const result = await dbPool

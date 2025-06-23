@@ -1,5 +1,6 @@
 /* eslint-disable no-undef */
 const sql = require('mssql');
+const bcrypt = require('bcrypt');
 
 const config = {
   user: 'sa', // thay bằng user thật
@@ -66,7 +67,20 @@ async function addStudent(studentId, studentFirstName, studentLastName, studentB
       .input('DiaChi', sql.NVarChar, studentAddress)
       .input('MaLop', sql.NChar, studentClassId)
       .execute('spThemSinhVien');
-    
+
+    // Tạo tài khoản cho sinh viên
+    // Mật khẩu là ngày sinh dạng ddMMyyyy
+    const dateObj = new Date(studentBirthday);
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const year = dateObj.getFullYear();
+    const rawPassword = `${day}${month}${year}`;
+    const hash = await bcrypt.hash(rawPassword, 10);
+    await pool.request()
+      .input('MASV', sql.NChar, studentId)
+      .input('MATKHAU', sql.NVarChar, hash)
+      .query('INSERT INTO Taikhoan_Sinhvien (MASV, MATKHAU) VALUES (@MASV, @MATKHAU)');
+
     return result;
   } catch (error) {
     console.error('Error adding student:', error);

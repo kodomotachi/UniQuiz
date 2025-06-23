@@ -34,7 +34,20 @@ async function loginTeacher(teacherId, password) {
 			expiresIn: '1h',
 		});
 
-		return { token };
+		// Lấy họ tên từ bảng Giaovien nếu không phải admin
+		let fullName = null;
+		if (teacherAccount.MAGV !== 'admin') {
+			const nameResult = await dbPool
+				.request()
+				.input('MAGV', sql.NChar(8), teacherAccount.MAGV)
+				.query('SELECT HO, TEN FROM Giaovien WHERE MAGV = @MAGV');
+			if (nameResult.recordset.length > 0) {
+				const { HO, TEN } = nameResult.recordset[0];
+				fullName = `${HO?.trim() || ''} ${TEN?.trim() || ''}`.trim();
+			}
+		}
+
+		return { token, fullName };
 
 	} catch (error) {
 		console.error('Error during teacher login: ', error.message);

@@ -54,10 +54,18 @@ const editQuestion = async (
     optionB,
     optionC,
     optionD,
-    correctAnswer
+    correctAnswer,
+    magv
 ) => {
     try {
         const poolConnection = await pool;
+        // Kiểm tra quyền sở hữu
+        const result = await poolConnection.request()
+            .input('CAUHOI', sql.Int, questionId)
+            .query('SELECT MAGV FROM Bode WHERE CAUHOI = @CAUHOI');
+        if (!result.recordset.length || result.recordset[0].MAGV.trim() !== magv.trim()) {
+            throw new Error('Bạn không có quyền chỉnh sửa câu hỏi này!');
+        }
         await poolConnection.request()
             .input('CAUHOI', sql.Int, questionId)
             .input('MAMH', sql.NChar(5), subjectId)
@@ -75,9 +83,16 @@ const editQuestion = async (
     }
 };
 
-const deleteQuestion = async (questionId) => {
+const deleteQuestion = async (questionId, magv) => {
     try {
         const poolConnection = await pool;
+        // Kiểm tra quyền sở hữu
+        const result = await poolConnection.request()
+            .input('CAUHOI', sql.Int, questionId)
+            .query('SELECT MAGV FROM Bode WHERE CAUHOI = @CAUHOI');
+        if (!result.recordset.length || result.recordset[0].MAGV.trim() !== magv.trim()) {
+            throw new Error('Bạn không có quyền xóa câu hỏi này!');
+        }
         await poolConnection.request()
             .input('CAUHOI', sql.Int, questionId)
             .execute('sp_DeleteQuestion');

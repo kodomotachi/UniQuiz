@@ -37,6 +37,14 @@ export default function SignIn() {
 
             if (response.ok) {
                localStorage.setItem('token', data.token);
+               const tokenPayload = JSON.parse(atob(data.token.split('.')[1]));
+               localStorage.setItem('role', tokenPayload.role);
+               // Lưu fullName nếu có
+               if (data.fullName) {
+                  localStorage.setItem('fullName', data.fullName);
+               } else {
+                  localStorage.removeItem('fullName');
+               }
                navigate('/teacher-dashboard');
             } else {
                alert(data.message || 'Login failed');
@@ -45,8 +53,36 @@ export default function SignIn() {
             console.error('Login error:', error);
             alert('An error occurred during login.');
          }
+      } else if (selectedRole === "Student") {
+         try {
+            const response = await fetch('http://localhost:3000/student/login', {
+               method: 'POST',
+               headers: {
+                  'Content-Type': 'application/json',
+               },
+               body: JSON.stringify({ studentId: email, password: password }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+               localStorage.setItem('token', data.token);
+               const tokenPayload = JSON.parse(atob(data.token.split('.')[1]));
+               localStorage.setItem('role', tokenPayload.role);
+               if (data.fullName) {
+                  localStorage.setItem('fullName', data.fullName);
+               } else {
+                  localStorage.removeItem('fullName');
+               }
+               navigate('/student-examinations');
+            } else {
+               alert(data.message || 'Login failed');
+            }
+         } catch (error) {
+            console.error('Login error:', error);
+            alert('An error occurred during login.');
+         }
       }
-      // you can add student login logic here later
    };
 
    return (

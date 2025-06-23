@@ -7,6 +7,9 @@ const { addSubject, getSubject, editSubject, deleteSubject } = require('./subjec
 const { getClass, addClass, editClass, deleteClass } = require('./class');
 const { getQuestionsBySubject, addQuestion, editQuestion, deleteQuestion, countQuestions } = require('./question');
 const { getExaminations, addExamination, editExamination, deleteExamination } = require('./examination');
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = 'your_jwt_secret_key';
+const bcrypt = require('bcrypt');
 
 const app = express();
 const PORT = 3000;
@@ -268,7 +271,11 @@ app.post('/question/add', async (req, res) => {
 app.post('/question/edit', async (req, res) => {
   try {
     const { questionId, subjectId, level, content, optionA, optionB, optionC, optionD, correctAnswer } = req.body;
-    await editQuestion(questionId, subjectId, level, content, optionA, optionB, optionC, optionD, correctAnswer);
+    // Lấy magv từ token
+    const token = req.headers.authorization?.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const magv = decoded.id;
+    await editQuestion(questionId, subjectId, level, content, optionA, optionB, optionC, optionD, correctAnswer, magv);
     res.json({ success: true, message: "Question updated successfully" });
   } catch (err) {
     res.status(500).json({ error: "Query got error when updating question", message: err.message });
@@ -278,7 +285,11 @@ app.post('/question/edit', async (req, res) => {
 app.post('/question/delete', async (req, res) => {
   try {
     const { questionId } = req.body;
-    await deleteQuestion(questionId);
+    // Lấy magv từ token
+    const token = req.headers.authorization?.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const magv = decoded.id;
+    await deleteQuestion(questionId, magv);
     res.json({ success: true, message: "Question deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: "Query got error when deleting question", message: err.message });
@@ -308,7 +319,11 @@ app.post('/examination/add', async (req, res) => {
 app.post('/examination/edit', async (req, res) => {
     try {
         const { malop, mamh, lan, trinhdo, ngaythi, socauthi, thoigian } = req.body;
-        await editExamination(malop, mamh, lan, trinhdo, ngaythi, socauthi, thoigian);
+        // Lấy magv từ token
+        const token = req.headers.authorization?.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const magv = decoded.id;
+        await editExamination(malop, mamh, lan, trinhdo, ngaythi, socauthi, thoigian, magv);
         res.json({ success: true, message: "Examination updated successfully" });
     } catch (err) {
         res.status(500).json({ error: "Query got error when updating examination", message: err.message });
@@ -318,10 +333,277 @@ app.post('/examination/edit', async (req, res) => {
 app.post('/examination/delete', async (req, res) => {
     try {
         const { malop, mamh, lan } = req.body;
-        await deleteExamination(malop, mamh, lan);
+        // Lấy magv từ token
+        const token = req.headers.authorization?.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const magv = decoded.id;
+        await deleteExamination(malop, mamh, lan, magv);
         res.json({ success: true, message: "Examination deleted successfully" });
     } catch (err) {
         res.status(500).json({ error: "Query got error when deleting examination", message: err.message });
+    }
+});
+
+app.get('/examination/upcoming/:studentId', async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const config = require('./config_server');
+        const dbPool = await config.pool;
+        
+        if (!dbPool) {
+            return res.status(500).json({ error: 'Database connection failed' });
+        }
+        
+        // Lấy MALOP của sinh viên
+        const studentInfo = await dbPool.request()
+            .input('MASV', config.sql.NChar(8), studentId)
+            .query('SELECT MALOP FROM Sinhvien WHERE MASV = @MASV');
+            
+        if (studentInfo.recordset.length === 0) {
+            return res.status(404).json({ error: 'Student not found' });
+        }
+        
+        const malop = studentInfo.recordset[0].MALOP.trim();
+        
+        // Lấy các phiên thi sắp tới và đang diễn ra cho lớp của sinh viên từ bảng Giaovien_Dangky
+        const examinations = await dbPool.request()
+            .input('MALOP', config.sql.NChar(8), malop)
+            .input('MASV', config.sql.NChar(8), studentId)
+            .input('NOW', config.sql.DateTime, new Date())
+            .query(`
+                SELECT gd.MAMH, gd.MALOP, gd.TRINHDO, gd.NGAYTHI, gd.LAN, gd.SOCAUTHI, gd.THOIGIAN,
+                       mh.TENMH as TENMON,
+                       DATEADD(MINUTE, gd.THOIGIAN, gd.NGAYTHI) as NGAYKETTHUC,
+                       bd.DIEM as DA_THI
+                FROM Giaovien_Dangky gd 
+                LEFT JOIN Monhoc mh ON gd.MAMH = mh.MAMH
+                LEFT JOIN BangDiem bd ON (gd.MAMH = bd.MAMH AND gd.LAN = bd.LAN AND bd.MASV = @MASV)
+                WHERE gd.MALOP = @MALOP 
+                  AND DATEADD(MINUTE, gd.THOIGIAN, gd.NGAYTHI) >= @NOW 
+                ORDER BY gd.NGAYTHI ASC
+            `);
+            
+        res.json(examinations.recordset);
+    } catch (err) {
+        console.error('Error in /examination/upcoming/:studentId:', err);
+        res.status(500).json({ error: 'Error getting upcoming examinations', message: err.message });
+    }
+});
+
+app.get('/teacher/fullname/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const config = require('./config_server');
+        const dbPool = await config.pool;
+        const result = await dbPool.request()
+            .input('MAGV', config.sql.NChar(8), id)
+            .query('SELECT HO, TEN FROM Giaovien WHERE MAGV = @MAGV');
+        if (result.recordset.length === 0) {
+            return res.status(404).json({ error: 'Teacher not found' });
+        }
+        const { HO, TEN } = result.recordset[0];
+        res.json({ fullName: `${HO?.trim() || ''} ${TEN?.trim() || ''}`.trim() });
+    } catch (err) {
+        res.status(500).json({ error: 'Error getting teacher full name', message: err.message });
+    }
+});
+
+app.get('/student/fullname/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const config = require('./config_server');
+        const dbPool = await config.pool;
+        const result = await dbPool.request()
+            .input('MASV', config.sql.NChar(8), id)
+            .query('SELECT HO, TEN FROM Sinhvien WHERE MASV = @MASV');
+        if (result.recordset.length === 0) {
+            return res.status(404).json({ error: 'Student not found' });
+        }
+        const { HO, TEN } = result.recordset[0];
+        res.json({ fullName: `${HO?.trim() || ''} ${TEN?.trim() || ''}`.trim() });
+    } catch (err) {
+        res.status(500).json({ error: 'Error getting student full name', message: err.message });
+    }
+});
+
+app.post('/student/login', async (req, res) => {
+    try {
+        const { studentId, password } = req.body;
+        if (!studentId || !password) {
+            return res.status(400).json({ error: 'Student ID and password are required' });
+        }
+        const config = require('./config_server');
+        const dbPool = await config.pool;
+        const result = await dbPool.request()
+            .input('MASV', config.sql.NChar(8), studentId)
+            .query('SELECT * FROM Taikhoan_Sinhvien WHERE MASV = @MASV');
+        if (result.recordset.length === 0) {
+            return res.status(401).json({ error: 'Tài khoản không tồn tại' });
+        }
+        const studentAccount = result.recordset[0];
+        const isMatch = await bcrypt.compare(password, studentAccount.MATKHAU);
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Mật khẩu không đúng' });
+        }
+        // Lấy họ tên sinh viên
+        const info = await dbPool.request()
+            .input('MASV', config.sql.NChar(8), studentId)
+            .query('SELECT HO, TEN FROM Sinhvien WHERE MASV = @MASV');
+        let fullName = '';
+        if (info.recordset.length > 0) {
+            const { HO, TEN } = info.recordset[0];
+            fullName = `${HO?.trim() || ''} ${TEN?.trim() || ''}`.trim();
+        }
+        const token = jwt.sign({ id: studentId, role: 'student' }, JWT_SECRET, { expiresIn: '1h' });
+        res.json({ token, fullName });
+    } catch (err) {
+        res.status(500).json({ error: 'Authentication failed', message: err.message });
+    }
+});
+
+// Test route để kiểm tra dữ liệu
+app.get('/test/data', async (req, res) => {
+    try {
+        const config = require('./config_server');
+        const dbPool = await config.pool;
+        
+        // Test kết nối và lấy dữ liệu
+        const students = await dbPool.request().query('SELECT TOP 5 * FROM Sinhvien');
+        const examinations = await dbPool.request().query('SELECT TOP 5 * FROM Giaovien_Dangky');
+        const subjects = await dbPool.request().query('SELECT TOP 5 * FROM Monhoc');
+        
+        res.json({
+            students: students.recordset,
+            examinations: examinations.recordset,
+            subjects: subjects.recordset
+        });
+    } catch (err) {
+        console.error('Test error:', err);
+        res.status(500).json({ error: 'Test failed', message: err.message });
+    }
+});
+
+// API để lấy câu hỏi ngẫu nhiên cho bài thi
+app.get('/exam/questions/:mamh/:trinhdo/:socau', async (req, res) => {
+    try {
+        const { mamh, trinhdo, socau } = req.params;
+        const config = require('./config_server');
+        const dbPool = await config.pool;
+        
+        if (!dbPool) {
+            return res.status(500).json({ error: 'Database connection failed' });
+        }
+        
+        // Lấy câu hỏi ngẫu nhiên từ bảng Bode
+        const questions = await dbPool.request()
+            .input('MAMH', config.sql.NChar(5), mamh)
+            .input('TRINHDO', config.sql.NChar(1), trinhdo)
+            .input('SOCAU', config.sql.Int, parseInt(socau))
+            .query(`
+                SELECT TOP (@SOCAU) CAUHOI, NOIDUNG, A, B, C, D, DAP_AN
+                FROM Bode 
+                WHERE MAMH = @MAMH AND TRINHDO = @TRINHDO
+                ORDER BY NEWID()
+            `);
+            
+        if (questions.recordset.length === 0) {
+            return res.status(404).json({ error: 'No questions found for this exam' });
+        }
+        
+        // Trộn thứ tự câu hỏi và loại bỏ đáp án (để gửi về frontend)
+        const shuffledQuestions = questions.recordset.map((q, index) => ({
+            questionNumber: index + 1,
+            questionId: q.CAUHOI,
+            content: q.NOIDUNG,
+            options: {
+                A: q.A,
+                B: q.B,
+                C: q.C,
+                D: q.D
+            }
+            // Không gửi DAP_AN về frontend để bảo mật
+        }));
+        
+        res.json(shuffledQuestions);
+    } catch (err) {
+        console.error('Error getting exam questions:', err);
+        res.status(500).json({ error: 'Error getting exam questions', message: err.message });
+    }
+});
+
+// API để nộp bài thi và tính điểm
+app.post('/exam/submit', async (req, res) => {
+    try {
+        const { studentId, mamh, lan, answers } = req.body;
+        const config = require('./config_server');
+        const dbPool = await config.pool;
+        
+        if (!dbPool) {
+            return res.status(500).json({ error: 'Database connection failed' });
+        }
+        
+        // Kiểm tra xem sinh viên đã thi phiên thi này chưa
+        const existingResult = await dbPool.request()
+            .input('MASV', config.sql.NChar(8), studentId)
+            .input('MAMH', config.sql.NChar(5), mamh)
+            .input('LAN', config.sql.SmallInt, lan)
+            .query('SELECT DIEM FROM BangDiem WHERE MASV = @MASV AND MAMH = @MAMH AND LAN = @LAN');
+            
+        if (existingResult.recordset.length > 0) {
+            return res.status(400).json({ 
+                error: 'Student has already taken this exam',
+                message: 'Bạn đã hoàn thành bài thi này rồi!'
+            });
+        }
+        
+        // Lấy đáp án đúng cho các câu hỏi
+        const questionIds = Object.keys(answers).map(id => parseInt(id));
+        let correctAnswers = 0;
+        let totalQuestions = questionIds.length;
+        const correctAnswersList = {};
+        
+        for (const questionId of questionIds) {
+            const result = await dbPool.request()
+                .input('CAUHOI', config.sql.Int, questionId)
+                .query('SELECT DAP_AN FROM Bode WHERE CAUHOI = @CAUHOI');
+                
+            if (result.recordset.length > 0) {
+                const correctAnswer = result.recordset[0].DAP_AN.trim();
+                correctAnswersList[questionId] = correctAnswer;
+                const studentAnswer = answers[questionId];
+                
+                if (correctAnswer === studentAnswer) {
+                    correctAnswers++;
+                }
+            }
+        }
+        
+        // Tính điểm (thang điểm 10)
+        const score = (correctAnswers / totalQuestions) * 10;
+        
+        // Lưu điểm vào bảng BangDiem
+        await dbPool.request()
+            .input('MASV', config.sql.NChar(8), studentId)
+            .input('MAMH', config.sql.NChar(5), mamh)
+            .input('LAN', config.sql.SmallInt, lan)
+            .input('NGAYTHI', config.sql.Date, new Date())
+            .input('DIEM', config.sql.Float, Math.round(score * 100) / 100)
+            .query(`
+                INSERT INTO BangDiem (MASV, MAMH, LAN, NGAYTHI, DIEM)
+                VALUES (@MASV, @MAMH, @LAN, @NGAYTHI, @DIEM)
+            `);
+        
+        res.json({
+            success: true,
+            score: Math.round(score * 100) / 100,
+            correctAnswers,
+            totalQuestions,
+            correctAnswersList,
+            message: 'Exam submitted successfully'
+        });
+    } catch (err) {
+        console.error('Error submitting exam:', err);
+        res.status(500).json({ error: 'Error submitting exam', message: err.message });
     }
 });
 

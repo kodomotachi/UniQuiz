@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import { useNavigate } from 'react-router-dom';
 
 export default function PrepareExamination() {
 	const [examinations, setExaminations] = useState([]);
@@ -19,6 +20,22 @@ export default function PrepareExamination() {
 
 	const [formError, setFormError] = useState('');
 	const [questionCountMsg, setQuestionCountMsg] = useState('');
+	const navigate = useNavigate();
+
+	// Redirect admin users
+	useEffect(() => {
+		const token = localStorage.getItem('token');
+		if (token) {
+			try {
+				const decoded = jwtDecode(token);
+				if (decoded.id === 'admin') {
+					navigate('/teacher-dashboard/admin-view-examinations', { replace: true });
+				}
+			} catch {
+				// ignore
+			}
+		}
+	}, [navigate]);
 
 	const fetchData = async (url, setter, entityName) => {
 		try {
@@ -69,7 +86,6 @@ export default function PrepareExamination() {
 			const decoded = jwtDecode(token);
 			return decoded.id;
 		} catch (error) {
-			console.error("Failed to decode token:", error)
 			return null;
 		}
 	};
@@ -80,7 +96,13 @@ export default function PrepareExamination() {
 			setFormError('Please fill all required fields.');
 			return;
 		}
-		
+		// Kiểm tra ngày giờ
+		const now = new Date();
+		const examDate = new Date(ngaythi);
+		if (examDate < now) {
+			setFormError('Không thể tạo phiên thi với thời gian trong quá khứ!');
+			return;
+		}
 		const magv = getLoggedInTeacherId();
 		if(!magv) {
 			setFormError('Could not identify teacher. Please log in again.');
@@ -156,13 +178,12 @@ export default function PrepareExamination() {
 	
 	const handleSaveEdit = async () => {
 		if (!editingExam) return;
-		
 		const { MALOP, MAMH, LAN, TRINHDO, NGAYTHI, SOCAUTHI, THOIGIAN } = editingExam;
-		
 		try {
+			const token = localStorage.getItem('token');
 			const response = await fetch('http://localhost:3000/examination/edit', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+				headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
 				body: JSON.stringify({
 					malop: MALOP,
 					mamh: MAMH,
@@ -173,7 +194,7 @@ export default function PrepareExamination() {
 					thoigian: THOIGIAN,
 				}),
 			});
-			 if (!response.ok) {
+			if (!response.ok) {
 				const err = await response.json();
 				throw new Error(err.message || 'Failed to update examination');
 			}
@@ -192,11 +213,11 @@ export default function PrepareExamination() {
 
 	const confirmDelete = async () => {
 		if (!deletingExam) return;
-
 		try {
+			const token = localStorage.getItem('token');
 			const response = await fetch('http://localhost:3000/examination/delete', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+				headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
 				body: JSON.stringify({ malop: deletingExam.MALOP, mamh: deletingExam.MAMH, lan: deletingExam.LAN }),
 			});
 			if (!response.ok) {
@@ -206,8 +227,7 @@ export default function PrepareExamination() {
 			setShowDeleteConfirm(false);
 			setDeletingExam(null);
 			fetchAllData();
-		} catch (error) {
-			console.error('Error deleting examination:', error);
+		} catch {
 			// Optionally show error to user
 		}
 	};
@@ -339,8 +359,12 @@ export default function PrepareExamination() {
 										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{exam.THOIGIAN} mins</td>
 										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{exam.SOCAUTHI}</td>
 										<td className="px-6 py-4 whitespace-nowrap text-center space-x-2">
-											<button onClick={() => handleEditExam(exam)} className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-1 px-3 rounded-md text-sm">Edit</button>
-											<button onClick={() => handleDeleteExam(exam)} className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-3 rounded-md text-sm">Delete</button>
+											{getLoggedInTeacherId() === exam.MAGV?.trim() && (
+												<>
+													<button onClick={() => handleEditExam(exam)} className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-1 px-3 rounded-md text-sm">Edit</button>
+													<button onClick={() => handleDeleteExam(exam)} className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-3 rounded-md text-sm">Delete</button>
+												</>
+											)}
 										</td>
 									</tr>
 								))
