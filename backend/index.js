@@ -607,6 +607,76 @@ app.post('/exam/submit', async (req, res) => {
     }
 });
 
+// API để lấy bảng điểm của một phiên thi cho giáo viên
+app.get('/examination/results/:malop/:mamh/:lan', async (req, res) => {
+    try {
+        const { malop, mamh, lan } = req.params;
+        const config = require('./config_server');
+        const dbPool = await config.pool;
+        
+        if (!dbPool) {
+            return res.status(500).json({ error: 'Database connection failed' });
+        }
+        
+        // Kiểm tra quyền truy cập của giáo viên
+        const token = req.headers.authorization?.split(' ')[1];
+        if (token) {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            const magv = decoded.id;
+            
+            // Kiểm tra giáo viên có quyền xem phiên thi này không
+            const examCheck = await dbPool.request()
+                .input('MALOP', config.sql.NChar(8), malop)
+                .input('MAMH', config.sql.NChar(5), mamh)
+                .input('LAN', config.sql.SmallInt, parseInt(lan))
+                .input('MAGV', config.sql.NChar(8), magv)
+                .query('SELECT * FROM Giaovien_Dangky WHERE MALOP = @MALOP AND MAMH = @MAMH AND LAN = @LAN AND MAGV = @MAGV');
+                
+            if (examCheck.recordset.length === 0) {
+                return res.status(403).json({ error: 'Access denied. You can only view your own examinations.' });
+            }
+        }
+        
+        // Lấy thông tin phiên thi
+        const examInfo = await dbPool.request()
+            .input('MALOP', config.sql.NChar(8), malop)
+            .input('MAMH', config.sql.NChar(5), mamh)
+            .input('LAN', config.sql.SmallInt, parseInt(lan))
+            .query(`
+                SELECT gd.*, mh.TENMH, l.TENLOP
+                FROM Giaovien_Dangky gd
+                LEFT JOIN Monhoc mh ON gd.MAMH = mh.MAMH
+                LEFT JOIN Lop l ON gd.MALOP = l.MALOP
+                WHERE gd.MALOP = @MALOP AND gd.MAMH = @MAMH AND gd.LAN = @LAN
+            `);
+            
+        if (examInfo.recordset.length === 0) {
+            return res.status(404).json({ error: 'Examination not found' });
+        }
+        
+        // Lấy danh sách sinh viên và điểm số
+        const results = await dbPool.request()
+            .input('MALOP', config.sql.NChar(8), malop)
+            .input('MAMH', config.sql.NChar(5), mamh)
+            .input('LAN', config.sql.SmallInt, parseInt(lan))
+            .query(`
+                SELECT sv.MASV, sv.HO, sv.TEN, bd.DIEM, bd.NGAYTHI
+                FROM Sinhvien sv
+                LEFT JOIN BangDiem bd ON (sv.MASV = bd.MASV AND bd.MAMH = @MAMH AND bd.LAN = @LAN)
+                WHERE sv.MALOP = @MALOP
+                ORDER BY sv.MASV
+            `);
+        
+        res.json({
+            examInfo: examInfo.recordset[0],
+            results: results.recordset
+        });
+    } catch (err) {
+        console.error('Error getting examination results:', err);
+        res.status(500).json({ error: 'Error getting examination results', message: err.message });
+    }
+});
+
 (async () => {
   try {
     app.listen(PORT, () => {

@@ -85,7 +85,7 @@ export default function PrepareExamination() {
 		try {
 			const decoded = jwtDecode(token);
 			return decoded.id;
-		} catch (error) {
+		} catch {
 			return null;
 		}
 	};
@@ -209,6 +209,11 @@ export default function PrepareExamination() {
 	const handleDeleteExam = (exam) => {
 		setDeletingExam(exam);
 		setShowDeleteConfirm(true);
+	};
+
+	// Xem kết quả bài thi
+	const handleViewResults = (exam) => {
+		navigate(`/teacher-dashboard/exam-results/${exam.MALOP}/${exam.MAMH}/${exam.LAN}`);
 	};
 
 	const confirmDelete = async () => {
@@ -365,6 +370,7 @@ export default function PrepareExamination() {
 													<button onClick={() => handleDeleteExam(exam)} className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-3 rounded-md text-sm">Delete</button>
 												</>
 											)}
+											<button onClick={() => handleViewResults(exam)} className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-1 px-3 rounded-md text-sm">View Results</button>
 										</td>
 									</tr>
 								))

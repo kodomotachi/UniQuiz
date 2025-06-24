@@ -13,6 +13,7 @@ import PrepareExamination from "./pages/Teacher/PrepareExamination";
 import TeacherDashboardButton from "./pages/TeacherDashboardButton";
 import CheckTable from "./CheckTable";
 import AdminViewExaminations from "./pages/Teacher/AdminViewExaminations";
+import ExamResults from "./pages/Teacher/ExamResults";
 import StudentExaminations from "./pages/StudentExaminations";
 import Exam from "./pages/Exam";
 import ExamResult from "./pages/ExamResult";
@@ -90,6 +91,14 @@ function App() {
                      <AdminRoute>
                         <AdminViewExaminations />
                      </AdminRoute>
+                  }
+               />
+               <Route
+                  path="exam-results/:malop/:mamh/:lan"
+                  element={
+                     <ProtectedRoute>
+                        <ExamResults />
+                     </ProtectedRoute>
                   }
                />
             </Route>
